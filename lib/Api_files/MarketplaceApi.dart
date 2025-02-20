@@ -1,30 +1,22 @@
-import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class MarketplaceUrl {
-  static Future<List<dynamic>> fetchMktPosts(String query) async {
-    final url = Uri.parse("https://ecommerce.com.pk/wp-json/api/v1/marketplaces/");
+  static Future<List<Map<String, dynamic>>> fetchMktPosts() async { 
+    final response = await http.get(
+      Uri.parse("https://ecommerce.com.pk/wp-json/api/v1/marketplaces"),
+      headers: {
+        'passkey': 'kW044]50^(ty',
+        'Content-Type': 'application/json',
+      },
+    );
 
-    try {
-      final response = await http.get(
-        url,
-        headers: {
-          'passkey': 'kW044]50^(ty',  // ✅ Add passkey here
-          'Content-Type': 'application/json',  // ✅ Ensure correct content type
-        },
-      );
-
-      print("API Status Code: ${response.statusCode}"); // Debugging
-      print("API Response: ${response.body}"); // Debugging
-
-      if (response.statusCode == 200) {
-        return json.decode(response.body);
-      } else {
-        throw Exception("Failed to load marketplace data. Status Code: ${response.statusCode}");
-      }
-    } catch (error) {
-      print("Error fetching marketplace data: $error"); // Debugging
-      throw Exception("Network error: $error");
+    if (response.statusCode == 200) {
+      List<dynamic> jsonData = jsonDecode(response.body);
+      
+      return jsonData.cast<Map<String, dynamic>>(); // ✅ Return as List<Map<String, dynamic>>
+    } else {
+      throw Exception("Failed to load marketplace posts");
     }
   }
 }

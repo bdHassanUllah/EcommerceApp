@@ -1,16 +1,37 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 import 'package:riverpod/riverpod.dart';
 
-// Define a StateNotifier to manage bottom navigation state
-class BottomNavNotifier extends StateNotifier<int> {
-  BottomNavNotifier() : super(0); // Default tab index is 0 (Home)
-
-  // Function to update selected index
-  void setIndex(int index) {
-    state = index;
-  }
-}
-
-// Create a provider to expose the BottomNavNotifier
 final bottomNavProvider = StateNotifierProvider<BottomNavNotifier, int>(
   (ref) => BottomNavNotifier(),
 );
+
+class BottomNavNotifier extends StateNotifier<int> {
+  BottomNavNotifier() : super(0);
+
+  void setIndex(int index, BuildContext context) {
+    if (state == index) return; // Prevent duplicate navigation
+
+    state = index; // Update the selected tab
+
+    // Check if user is logged in
+    final isLoggedIn = FirebaseAuth.instance.currentUser != null;
+
+    // Navigate based on the index
+    switch (index) {
+      case 0:
+        Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+        break;
+      case 1:
+        Navigator.pushNamedAndRemoveUntil(context, '/search', (route) => false);
+        break;
+      case 2:
+        if (isLoggedIn) {
+          Navigator.pushNamedAndRemoveUntil(context, '/profile', (route) => false);
+        } else {
+          Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+        }
+        break;
+    }
+  }
+}

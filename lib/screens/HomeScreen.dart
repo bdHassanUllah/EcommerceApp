@@ -1,5 +1,6 @@
+import 'package:e_commerce/Api_files/BlogsApi.dart';
 import 'package:e_commerce/Api_files/MarketplaceApi.dart';
-import 'package:e_commerce/Api_files/BusinessApi.dart';
+import 'package:e_commerce/screens/BlogPost.dart';
 import 'package:e_commerce/state_provider/AuthStateProvider.dart';
 import 'package:flutter/material.dart';
 import 'package:e_commerce/Api_files/PostApi.dart';
@@ -28,14 +29,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Future<List<dynamic>>? images;
   Future<List<dynamic>>? mrktplace;
   Future<List<Map<String, String>>>? businesspage; // Updated type
+  Future<List<Map<String, String>>>? blogpage;
 
   @override
   void initState() {
     super.initState();
     posts = ApiService.fetchPosts('');
     images = ImgApiURL().fetchImage();
-    mrktplace = MarketplaceUrl.fetchMktPosts('');
-    businesspage = Businessurl.fetchBusinessPosts('') as Future<List<Map<String, String>>>?;// Correct API call
+    mrktplace = MarketplaceUrl.fetchMktPosts();
+    Future<List<Map<String, dynamic>>>? businesspage;
+    blogpage = Blogsapi.fetchBlogsPosts('');
   }
 
   // Method to get the tab content
@@ -66,44 +69,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           },
         );
       case 1:
-        return const MarketplaceScreen();
+        return MarketplaceScreen();
       case 2:
-        return const BusinessScreen(); 
-        /*return FutureBuilder<List<Map<String, String>>>(
-          future: businesspage,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            } else if (snapshot.hasError) {
-              return Center(child: Text("Error: ${snapshot.error}"));
-            } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-              return const Center(child: Text("No business data found"));
-            }
-
-            return ListView.builder(
-              itemCount: snapshot.data!.length,
-              itemBuilder: (context, index) {
-                String title = snapshot.data![index]["title"]!;
-                String imageUrl = snapshot.data![index]["image"]!;
-
-                return ListTile(
-                  leading: Image.network(
-                    imageUrl,
-                    width: 50,
-                    height: 50,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Image.asset("lib/assets/image/placeholder.png", width: 50, height: 50);
-                    },
-                  ),
-                  title: Text(title),
-                );
-              },
-            );
-          },
-        );*/
+        return const BusinessPage(); 
       case 3:
-        return const Center(child: Text("Blog Content"));
+        return BlogScreen();
       default:
         return const Center(child: Text("Publications Content"));
     }
@@ -150,7 +120,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       const SearchScreen(),
       user != null 
         ? ProfileScreen(
-            userName: user.displayName ?? 'Guest', 
+            userName: user.displayName ?? '', 
             userImage: user.photoURL ?? 'https://via.placeholder.com/150',
           ) 
         : LoginScreen(),

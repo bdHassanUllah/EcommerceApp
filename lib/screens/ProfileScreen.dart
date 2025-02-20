@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:e_commerce/screens/LoginScreen.dart';
 import 'package:e_commerce/screens/PostDetailScreen.dart';
 import 'package:e_commerce/state_provider/AuthStateProvider.dart';
+import 'package:e_commerce/state_provider/SavedPostNotifier.dart';
 import 'package:e_commerce/widgets/BottomNavigationWidget.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -133,7 +134,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context,) {
+    final savedPosts = ref.watch(savedPostsProvider);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Profile'),
@@ -155,8 +157,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   radius: 40,
                   backgroundImage: widget.userImage.isNotEmpty
                       ? NetworkImage(widget.userImage)
-                      : const AssetImage('lib/assets/image/default_avatar.png') 
-                          as ImageProvider,
+                      : const AssetImage('lib/assets/image/default_avatar.png') as ImageProvider,
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -165,8 +166,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     children: [
                       Text(
                         widget.userName,
-                        style: const TextStyle(
-                            fontSize: 20, fontWeight: FontWeight.bold),
+                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
@@ -202,34 +202,26 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                           .orderBy('timestamp', descending: true)
                           .snapshots(),
                       builder: (context, snapshot) {
-                        if (snapshot.connectionState == 
-                            ConnectionState.waiting) {
-                          return const Center(
-                              child: CircularProgressIndicator());
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const Center(child: CircularProgressIndicator());
                         }
                         if (snapshot.hasError) {
-                          return Center(
-                              child: Text("Error: ${snapshot.error}"));
+                          return Center(child: Text("Error: ${snapshot.error}"));
                         }
-                        if (!snapshot.hasData || 
-                            snapshot.data!.docs.isEmpty) {
-                          return const Center(
-                              child: Text("No saved articles found."));
+                        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                          return const Center(child: Text("No saved articles found."));
                         }
 
                         return ListView.builder(
                           itemCount: snapshot.data!.docs.length,
                           itemBuilder: (context, index) {
-                            final article = snapshot.data!.docs[index].data() 
-                                as Map<String, dynamic>;
+                            final article = snapshot.data!.docs[index].data() as Map<String, dynamic>;
                             return ListTile(
                               title: Text(article['title'] ?? "Untitled"),
                               leading: article['imageUrl'] != null
-                                  ? Image.network(article['imageUrl'], 
-                                      width: 150, height: 150)
+                                  ? Image.network(article['imageUrl'], width: 150, height: 150)
                                   : const Icon(Icons.image, size: 50),
                               onTap: () {
-                                // Save the post when tapped
                                 _saveArticle(
                                   article['postId'] ?? '', 
                                   article['title'] ?? "No title", 
@@ -243,9 +235,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                                     builder: (context) => PostDetailScreen(
                                       post: article,
                                       postContent: article['content'] ?? "No content available",
-                                      datePosted: article['timestamp'] != null
-                                          ? (article['timestamp'] as Timestamp).toDate().toString()
-                                          : "Unknown date",
                                     ),
                                   ),
                                 );
@@ -256,8 +245,22 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       },
                     ),
             ),
+            const SizedBox(height: 20),
+            Center(
+              child: ElevatedButton(
+                onPressed: () => _showLogoutDialog(context),
+                style: ElevatedButton.styleFrom(
+                  foregroundColor: Colors.black,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
+                child: const Text('Logout'),
+              ),
+            ),
           ],
         ),
+
       ),
       bottomNavigationBar: const BottomNavigationWidget(),
     );

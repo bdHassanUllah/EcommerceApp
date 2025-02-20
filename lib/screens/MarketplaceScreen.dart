@@ -1,5 +1,8 @@
-import 'package:e_commerce/Api_files/MarketplaceApi.dart';
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
+import 'MarketplaceDetailScreen.dart';
 
 class MarketplaceScreen extends StatefulWidget {
   const MarketplaceScreen({super.key});
@@ -9,72 +12,161 @@ class MarketplaceScreen extends StatefulWidget {
 }
 
 class _MarketplaceScreenState extends State<MarketplaceScreen> {
-  late Future<List<dynamic>> marketplaceItems;
+  List<Map<String, String>> marketplaceItems = [];
+  bool isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    marketplaceItems = MarketplaceUrl.fetchMktPosts('');
+    fetchMktPosts();
   }
+
+  Future<void> fetchMktPosts() async {
+  try {
+    final response = await http.get(
+      Uri.parse("https://ecommerce.com.pk/wp-json/api/v1/marketplaces"),
+      headers: {
+        'passkey': 'kW044]50^(ty',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      List<dynamic> jsonData = json.decode(response.body);
+
+      List<Map<String, String>> marketplaceData = jsonData.map<Map<String, String>>((item) {
+        String fullTitle = item["title"] ?? "No Title";
+
+        // Default placeholder image
+        String placeholderImage = "https://upload.wikimedia.org/wikipedia/commons/d/d1/Image_not_available.png";
+
+        // Get the first available image from API response
+        String imageUrl = item["Image1"] ?? item["Image2"] ?? item["Image3"] ?? item["Image4"] ?? placeholderImage;
+
+        // Ensure the image URL is valid
+        if (imageUrl.isEmpty || !Uri.tryParse(imageUrl)!.hasAbsolutePath) {
+          imageUrl = placeholderImage;
+        }
+
+        // Extract title before ':'
+        String extractedTitle = fullTitle.contains(":") ? fullTitle.split(":")[0].trim() : fullTitle;
+        return {
+          "title": extractedTitle,
+          "image": imageUrl,
+          "content": item["content"] ?? "No content available",
+        };
+      }).toList();
+
+      setState(() {
+        marketplaceItems = marketplaceData;
+        isLoading = false;
+      });
+    } else {
+      throw Exception("Failed to load marketplace posts");
+    }
+  } catch (error) {
+    print("Error fetching marketplace data: $error");
+    setState(() {
+      isLoading = false;
+    });
+  }
+}
+
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: FutureBuilder<List<dynamic>>(
-        future: marketplaceItems,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
-            return Center(child: Text("Error: ${snapshot.error}"));
-          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text("No marketplace items found"));
-          }
-
-          return Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: GridView.builder(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 10,
-                mainAxisSpacing: 10,
-                childAspectRatio: 0.75,
-              ),
-              itemCount: snapshot.data!.length,
-              itemBuilder: (context, index) {
-                String? imageUrl = snapshot.data![index]["image_url"];
-                String defaultImage = "https://via.placeholder.com/150";
-                String title = snapshot.data![index]["title"] ?? "No Title";
-
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.network(
-                        imageUrl ?? defaultImage,
-                        height: 130,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Image.asset("lib/assets/image/placeholder.png", fit: BoxFit.cover);
-                        },
+      body: Column(
+        children: [
+          const Padding(
+            padding: EdgeInsets.all(16.0),
+          ),
+          Expanded(
+            child: isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                    child: GridView.builder(
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2, // Two columns
+                        crossAxisSpacing: 6,
+                        mainAxisSpacing: 0,
+                        childAspectRatio: 0.9,
                       ),
+                      itemCount: marketplaceItems.length,
+                      itemBuilder: (context, index) {
+                        final image = marketplaceItems[index];
+                        return GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => MarketplaceDetailScreen(
+                                  title: marketplaceItems[index]["title"] ?? "No Title",
+                                  imageUrl: marketplaceItems[index]["image"] ?? "https://upload.wikimedia.org/wikipedia/commons/d/d1/Image_not_available.png",
+                                  content: marketplaceItems[index]["content"] ?? "No content available.",
+                                ),
+                              ),
+                            );
+                          },
+                          child: Column(
+                            children: [
+                              Expanded(
+                                child: Image.network(
+                                  image["image"] ?? "lib/assets/image/placeholder.jpg",
+                                  width: double.infinity,
+                                  height: 200,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Image.asset(
+                                      "lib/assets/image/placeholder.jpg",
+                                      width: double.infinity,
+                                      height: 200,
+                                      fit: BoxFit.cover,
+                                    );
+                                  },
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Text(
+                                  marketplaceItems[index]["title"]!,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              _buildDivider(index),
+                            ],
+                          ),
+                        );
+                      },
                     ),
-                    const SizedBox(height: 5),
-                    Text(
-                      title,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                );
-              },
-            ),
-          );
-        },
+                  ),
+          ),
+        ],
       ),
+    );
+  }
+
+  Widget _buildDivider(int index) {
+    return Column(
+      children: [
+        if ((index + 1) % 2 == 0) // Horizontal divider after every row
+          const Divider(
+            thickness: 1,
+            color: Colors.grey,
+          ),
+        if (index.isEven) // Vertical divider in between columns
+          const VerticalDivider(
+            thickness: 1,
+            color: Colors.grey,
+          ),
+      ],
     );
   }
 }

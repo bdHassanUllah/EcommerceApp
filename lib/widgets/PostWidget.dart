@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:e_commerce/screens/PostDetailScreen.dart';
+import 'package:share_plus/share_plus.dart'; // Import share_plus
 
 class PostWidget extends StatefulWidget {
   final Map<String, dynamic> post;
@@ -36,7 +37,7 @@ class _PostWidgetState extends State<PostWidget> {
 
   Future<void> checkIfSaved() async {
     if (userEmail == null) return;
-    final docId = userEmail! + "_" + widget.post['title'];
+    final docId = "${userEmail!}_" + widget.post['title'];
     final doc = await FirebaseFirestore.instance.collection('saved_articles').doc(docId).get();
     setState(() {
       isSaved = doc.exists;
@@ -46,7 +47,7 @@ class _PostWidgetState extends State<PostWidget> {
   void toggleSaveArticle() async {
     if (!isLoggedIn) return;
 
-    final docId = userEmail! + "_" + widget.post['title'];
+    final docId = "${userEmail!}_" + widget.post['title'];
     final savedArticlesRef = FirebaseFirestore.instance.collection('saved_articles');
 
     try {
@@ -91,6 +92,14 @@ class _PostWidgetState extends State<PostWidget> {
     );
   }
 
+  // Method to handle sharing the post
+  void sharePost(BuildContext context) {
+    final String postUrl = "https://ecommerce.com.pk/wp-json/api/v1/happenings/"; // Replace with your post URL
+
+    // Use share_plus to open the share dialog
+    Share.share(postUrl, subject: 'Check out this post!');
+  }
+
   @override
   Widget build(BuildContext context) {
     double imageSize = 20.0;
@@ -102,9 +111,6 @@ class _PostWidgetState extends State<PostWidget> {
             builder: (context) => PostDetailScreen(
               post: widget.post,
               postContent: widget.post['content'] ?? "No Content Available",
-              datePosted: DateFormat('MMMM dd, yyyy').format(
-                DateTime.tryParse(widget.post['created_at'].toString()) ?? DateTime.now(),
-              ),
             ),
           ),
         );
@@ -129,13 +135,13 @@ class _PostWidgetState extends State<PostWidget> {
                         ),
                       ),
                       SizedBox(height: 5),
-                      Text(
+                      /*Text(
                         widget.post['excerpt'] ?? "No Description",
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(color: Colors.black, fontSize: 12),
-                      ),
-                      SizedBox(height: 35),
+                      ),*/
+                      SizedBox(height: 70),
                       Row(
                         children: [
                           Icon(Icons.access_time, color: Colors.black, size: 16),
@@ -191,7 +197,7 @@ class _PostWidgetState extends State<PostWidget> {
                         SizedBox(width: 20),
                         GestureDetector(
                           onTap: () {
-                            print("Share tapped");
+                            sharePost(context); // Open the mobile share dialog
                           },
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
@@ -200,7 +206,7 @@ class _PostWidgetState extends State<PostWidget> {
                                 'lib/assets/image/share_logo.png',
                                 height: 30,
                                 width: 30,
-                                ),
+                              ),
                               SizedBox(width: 3),
                               Text(
                                 "Share",

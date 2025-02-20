@@ -200,12 +200,6 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 child: ListView.builder(
                   itemCount: _searchResults.length,
                   itemBuilder: (context, index) {
-                    String formattedDate = "";
-                    if (_searchResults[index]['date'] != null) {
-                      DateTime dateTime = DateTime.parse(_searchResults[index]['date']);
-                      formattedDate = DateFormat('yyyy-MM-dd – kk:mm').format(dateTime);
-                    }
-
                     return Column(
                       children: [
                         ListTile(
@@ -235,7 +229,6 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                                 builder: (context) => PostDetailScreen(
                                   post: _searchResults[index],
                                   postContent: _searchResults[index]['content'] ?? "Content not available",
-                                  datePosted: formattedDate,
                                 ),
                               ),
                             );

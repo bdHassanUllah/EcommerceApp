@@ -1,3 +1,6 @@
+import 'package:e_commerce/screens/HomeScreen.dart';
+import 'package:e_commerce/screens/ProfileScreen.dart';
+import 'package:e_commerce/screens/SearchScreen.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:hive_flutter/adapters.dart';
@@ -12,7 +15,15 @@ void main() async {
   var box = await Hive.openBox('cacheBox'); // Open a storage box
   await box.clear(); // Clear storage when app starts
 
-  runApp(const ProviderScope(child: MyApp())); // Initialize Riverpod
+  runApp(ProviderScope(
+      child: MaterialApp(
+        initialRoute: '/home',
+        routes: {
+          '/home': (context) => HomeScreen(),
+          '/search': (context) => SearchScreen(),
+          '/profile': (context) => ProfileScreen(userName: '', userImage: '',),
+        },
+      ),),);// Initialize Riverpod
 }
 
 class MyApp extends StatelessWidget {

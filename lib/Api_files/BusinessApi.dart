@@ -1,43 +1,52 @@
-import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:html/parser.dart';
 
-class Businessurl {
-  static final businessUrl = Uri.parse("https://ecommerce.com.pk/wp-json/api/v1/businesses/"); 
+class BusinessApi {
+  static Future<List<Map<String, dynamic>>> fetchBusinessPosts() async {
+    final url = Uri.parse("https://ecommerce.com.pk/wp-json/api/v1/businesses/");
 
-  static Future<List<Map<String, String>>> fetchBusinessPosts(String query) async {
     try {
-      final response = await http.get(businessUrl,headers: {
-          'passkey': 'kW044]50^(ty',  // ✅ Add passkey here
-          'Content-Type': 'application/json',  // ✅ Ensure correct content type
-        },);
+      final response = await http.get(
+        url,
+        headers: {
+          'passkey': 'kW044]50^(ty',
+          'Content-Type': 'application/json',
+        },
+      );
 
-      print("API Status Code: ${response.statusCode}");
-      print("API Response: ${response.body}");
+      debugPrint("API Response: ${response.body}"); // ✅ Print API response
 
       if (response.statusCode == 200) {
-        List<dynamic> jsonData = json.decode(response.body);
+        List<dynamic> jsonResponse = jsonDecode(response.body);
 
-        // Extract title and image URL
-        List<Map<String, String>> businessData = jsonData.map((item) {
-          String fullTitle = item["title"] ?? "No Title";
-          String imageUrl = item["featured_image"] ?? "https://via.placeholder.com/150"; // Default image
+        if (jsonResponse.isEmpty) {
+          debugPrint("API returned an empty list!"); // ✅ Log empty response
+          return [];
+        }
 
-          // Extract first words before ":" (if exists)
-          String extractedTitle = fullTitle.contains(":") ? fullTitle.split(":")[0].trim() : fullTitle;
-
+        return jsonResponse.map((post) {
           return {
-            "title": extractedTitle,
-            "image": imageUrl,
+            "id": post["id"]?.toString() ?? "0",
+            "title": _parseHtmlToText(post["title"] ?? "No Title"),
+            "image": post["Image1"] ?? "https://example.com/default.jpg",
+            "description": _parseHtmlToText(post["description"] ?? "No Description"),
+            "full_description": _parseHtmlToText(post["content"] ?? "No Full Description"),
           };
         }).toList();
-
-        return businessData;
       } else {
-        throw Exception("Failed to load business data");
+        debugPrint("Error: Status Code ${response.statusCode}");
+        return [];
       }
     } catch (error) {
-      print("Error fetching business data: $error");
-      throw Exception("Network error: $error");
+      debugPrint("Error fetching business data: $error");
+      return [];
     }
+  }
+
+  // Function to remove HTML tags
+  static String _parseHtmlToText(String htmlString) {
+    return parse(htmlString).body?.text ?? '';
   }
 }

@@ -1,90 +1,92 @@
+import 'package:e_commerce/screens/BusinessDetailScreen.dart';
 import 'package:e_commerce/Api_files/BusinessApi.dart';
 import 'package:flutter/material.dart';
 
-class BusinessScreen extends StatefulWidget {
-  const BusinessScreen({super.key});
+class BusinessPage extends StatefulWidget {
+  const BusinessPage({super.key});
 
   @override
-  State<BusinessScreen> createState() => _BusinessScreenState();
+  State<BusinessPage> createState() => _BusinessPageState();
 }
 
-class _BusinessScreenState extends State<BusinessScreen> {
-  late Future<List<dynamic>> businessPosts;
+class _BusinessPageState extends State<BusinessPage> {
+  late Future<List<Map<String, dynamic>>> businessUrl;
 
   @override
   void initState() {
     super.initState();
-    businessPosts = Businessurl.fetchBusinessPosts('');
+    businessUrl = BusinessApi.fetchBusinessPosts();
   }
 
   @override
   Widget build(BuildContext context) {
+    
     return Scaffold(
-      body: Column(
-        children: [
-          Expanded(
-            child: FutureBuilder<List<dynamic>>(
-              future: businessPosts,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                } else if (snapshot.hasError) {
-                  return Center(child: Text("Error: ${snapshot.error}"));
-                } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return const Center(child: Text("No business-related posts found"));
-                }
-                return ListView.builder(
-                  itemCount: snapshot.data!.length,
-                  itemBuilder: (context, index) {
-                    var post = snapshot.data![index];
-                    String title = post["title"] ?? "No Title";
-                    String imageUrl = post["featured_image"] ?? "";
-                    return _businessCard(title, imageUrl);
-                  },
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+      body: FutureBuilder<List<Map<String, dynamic>>>(
+        future: BusinessApi.fetchBusinessPosts(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return Center(child: Text("Error: ${snapshot.error}"));
+          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(child: Text("No business listings found"));
+          }
+          List<Map<String, dynamic>> businessPosts = snapshot.data!;
 
-  Widget _categoryTab(String title, {bool isActive = false}) {
-    return Text(
-      title,
-      style: TextStyle(
-        fontSize: 16,
-        fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-        decoration: isActive ? TextDecoration.underline : TextDecoration.none,
-      ),
-    );
-  }
+          return ListView.builder(
+            itemCount: businessPosts.length,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemBuilder: (context, index) {
+              final business = businessPosts[index];
 
-  Widget _businessCard(String title, String imageUrl) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: Image.network(
-              imageUrl,
-              width: double.infinity,
-              height: 120,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return Image.asset("lib/assets/image/placeholder.png", height: 180, fit: BoxFit.cover);
-              },
-            ),
-          ),
-          const SizedBox(height: 5),
-          Text(
-            title,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-        ],
+              return GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => BusinessDetailScreen(
+                        title: business["title"] ?? "No Title",
+                        imageUrl: business["image"] ?? "https://via.placeholder.com/150",
+                        content: business["full_description"] ?? "No content available.", // ✅ Avoids null error
+                        post: business,
+                      ),
+                    ),
+                  );
+
+                },
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.network(
+                        business["image"] ?? "lib/assets/image/placeholder.jpg",
+                        width: double.infinity,
+                        height: 200,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Image.asset(
+                            "lib/assets/image/placeholder.jpg",
+                            width: double.infinity,
+                            height: 200,
+                            fit: BoxFit.cover,
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      business["title"] ?? "No Title",
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                ),
+              );
+            },
+          );
+        },
       ),
     );
   }

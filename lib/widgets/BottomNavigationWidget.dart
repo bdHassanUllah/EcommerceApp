@@ -13,8 +13,9 @@ class BottomNavigationWidget extends ConsumerWidget {
 
     return BottomNavigationBar(
       currentIndex: selectedIndex,
+      // Bottom Navigation Widget
       onTap: (index) {
-        ref.read(bottomNavProvider.notifier).state = index;
+        ref.read(bottomNavProvider.notifier).setIndex(index, context);
       },
       items: [
         const BottomNavigationBarItem(
@@ -32,7 +33,7 @@ class BottomNavigationWidget extends ConsumerWidget {
                   radius: 12, // Adjust size
                 )
               : const Icon(Icons.account_circle), // Default Account Icon
-          label: user != null ? user.displayName ?? 'Account' : 'Account',
+              label: user != null ? user.displayName ?? 'Profile' : 'Login',
         ),
       ],
     );
