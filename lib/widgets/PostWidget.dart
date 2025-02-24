@@ -135,12 +135,12 @@ class _PostWidgetState extends State<PostWidget> {
                         ),
                       ),
                       SizedBox(height: 5),
-                      /*Text(
+                      Text(
                         widget.post['excerpt'] ?? "No Description",
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(color: Colors.black, fontSize: 12),
-                      ),*/
+                      ),
                       SizedBox(height: 70),
                       Row(
                         children: [

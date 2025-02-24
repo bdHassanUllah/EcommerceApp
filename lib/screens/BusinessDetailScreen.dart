@@ -27,9 +27,16 @@ class BusinessDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _BusinessDetailScreenState extends ConsumerState<BusinessDetailScreen> {
-  bool isSaved = false;
+  String removeHtmlTags(String htmlString) {
+    String withoutShortcodes = htmlString.replaceAll(RegExp(r'\[.*?\]'), '');
+    dom.Document document = html_parser.parse(withoutShortcodes);
+    String plainText = document.body?.text ?? '';
+    return plainText.replaceAll(RegExp(r'\s+'), ' ').trim();
+  }
+
   bool isLoggedIn = false;
   String? userEmail;
+  bool isSaved = false;
 
   @override
   void initState() {
@@ -46,79 +53,43 @@ class _BusinessDetailScreenState extends ConsumerState<BusinessDetailScreen> {
     });
   }
 
-  String removeHtmlTags(String htmlString) {
-    String withoutShortcodes = htmlString.replaceAll(RegExp(r'\[.*?\]'), '');
-    dom.Document document = html_parser.parse(withoutShortcodes);
-    String plainText = document.body?.text ?? '';
-    return plainText.replaceAll(RegExp(r'\s+'), ' ').trim();
-  }
-
   Future<void> checkIfSaved() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-    
-    final postRef = FirebaseFirestore.instance.collection('saved_posts').doc(user.uid);
-    final snapshot = await postRef.get();
-
-    if (snapshot.exists) {
-      List<Map<String, dynamic>> savedPosts = List<Map<String, dynamic>>.from(snapshot.data()?['posts'] ?? []);
-      setState(() {
-        isSaved = savedPosts.any((post) => post['title'] == widget.title);
-      });
-    }
+    if (userEmail == null) return;
+    final docId = "${userEmail!}_" + widget.title;
+    final doc = await FirebaseFirestore.instance.collection('saved_articles').doc(docId).get();
+    setState(() {
+      isSaved = doc.exists;
+    });
   }
 
 
-  void toggleSaveArticle() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      showDialogBox("Error", "You must be logged in to save articles.");
-      return;
-    }
+    void toggleSaveArticle() async {
+    if (!isLoggedIn) return;
 
-    final postRef = FirebaseFirestore.instance.collection('saved_posts').doc(user.uid);
+    final docId = "${userEmail!}_" + widget.title;
+    final savedArticlesRef = FirebaseFirestore.instance.collection('saved_articles');
 
     try {
-      final snapshot = await postRef.get();
-
-      List<Map<String, dynamic>> savedPosts = [];
-
-      if (snapshot.exists) {
-        var data = snapshot.data();
-        if (data != null && data.containsKey('posts')) {
-          savedPosts = List<Map<String, dynamic>>.from(data['posts']);
-        }
-      }
-
-      bool alreadySaved = savedPosts.any((post) => post['title'] == widget.title);
-
-      if (alreadySaved) {
-        savedPosts.removeWhere((post) => post['title'] == widget.title);
-        await postRef.update({'posts': savedPosts});
+      if (isSaved) {
+        await savedArticlesRef.doc(docId).delete();
         showDialogBox("Removed", "Article removed from saved list.");
       } else {
-        savedPosts.add({
-          'title': widget.title,
-          'content': widget.content,
+        await savedArticlesRef.doc(docId).set({
+          'email': userEmail!,
+          'title': widget.title?? "No Title",
+          'content': widget.content ?? "No Content",
           'imageUrl': widget.imageUrl,
           'timestamp': FieldValue.serverTimestamp(),
         });
-
-        await postRef.set({'posts': savedPosts}, SetOptions(merge: true));
         showDialogBox("Success", "Article saved successfully!");
       }
-
       setState(() {
         isSaved = !isSaved;
       });
     } catch (error) {
-      print("Error saving post: $error"); // Debugging print
       showDialogBox("Error", "Failed to save the article. Please try again.");
     }
   }
-
-
-
 
   void showDialogBox(String title, String message) {
     showDialog(
@@ -170,10 +141,10 @@ class _BusinessDetailScreenState extends ConsumerState<BusinessDetailScreen> {
           actions: [
             PopupMenuButton<String>(
               onSelected: (value) {
-                if (value == 'save' && user != null) {
+                if (value == "save") {
                   toggleSaveArticle();
-                } else if (value == 'share') {
-                  Share.share("${widget.title}\n\n${removeHtmlTags(widget.content)}");
+                } else if (value == "share") {
+                  sharePost(context);
                 }
               },
               itemBuilder: (BuildContext context) => [
@@ -184,7 +155,7 @@ class _BusinessDetailScreenState extends ConsumerState<BusinessDetailScreen> {
                       isSaved ? Icons.bookmark : Icons.bookmark_border,
                       color: isSaved ? Colors.black : null,
                     ),
-                    title: Text('Save'),
+                    title: Text(isSaved?'Unsave':'Save'),
                   ),
                 ),
                 const PopupMenuItem(

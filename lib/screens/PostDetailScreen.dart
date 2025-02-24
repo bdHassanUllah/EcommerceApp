@@ -21,7 +21,7 @@ class PostDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
-  void _sharePost() {
+  /*void _sharePost() {
     final user = ref.read(authStateProvider);
     if (user == null) {
       _showLoginMessage();
@@ -32,6 +32,13 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
       "${widget.post['title']}\n\nRead more: ${widget.post['link']}",
       subject: "Check out this post!",
     );
+  }*/
+  // Method to handle sharing the post
+  void sharePost(BuildContext context) {
+    final String postUrl = "https://ecommerce.com.pk/wp-json/api/v1/happenings/"; // Replace with your post URL
+
+    // Use share_plus to open the share dialog
+    Share.share(postUrl, subject: 'Check out this post!');
   }
 
   void _toggleSavePost() async {
@@ -82,7 +89,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                 if (value == "save") {
                   _toggleSavePost();
                 } else if (value == "share") {
-                  _sharePost();
+                  sharePost(context);
                 }
               },
               itemBuilder: (context) => [
@@ -142,7 +149,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                   style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 10),
-                Html(data: widget.postContent),
+                Html (data: widget.postContent),
               ],
             ),
           ),

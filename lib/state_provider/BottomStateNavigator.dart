@@ -10,7 +10,7 @@ class BottomNavNotifier extends StateNotifier<int> {
   BottomNavNotifier() : super(0);
 
   void setIndex(int index, BuildContext context) {
-    if (state == index) return; // Prevent duplicate navigation
+    //if (state == index) return; // Prevent duplicate navigation
 
     state = index; // Update the selected tab
 
@@ -29,7 +29,7 @@ class BottomNavNotifier extends StateNotifier<int> {
         if (isLoggedIn) {
           Navigator.pushNamedAndRemoveUntil(context, '/profile', (route) => false);
         } else {
-          Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+          Navigator.pushNamedAndRemoveUntil(context, '/loginscreen', (route) => false);
         }
         break;
     }

@@ -1,9 +1,12 @@
 import 'package:e_commerce/screens/PostDetailScreen.dart';
+import 'package:e_commerce/state_provider/AuthStateProvider.dart';
 import 'package:e_commerce/widgets/BottomNavigationWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive/hive.dart';
-import 'package:intl/intl.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
   const SearchScreen({super.key});
@@ -18,6 +21,42 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   bool _isLoading = false;
   bool _isSearchBarFocused = false;
   List<String> previousSearches = [];
+
+  Future<void> fetchPosts() async {
+  try {
+    final response = await http.get(
+      Uri.parse("https://ecommerce.com.pk/wp-json/api/v1/happenings/"),
+      headers: {'passkey': 'kW044]50^(ty'},
+    );
+
+    print("API Response Status Code: ${response.statusCode}");
+    print("API Response Body: ${response.body}");
+
+    if (response.statusCode == 200) {
+      final jsonData = json.decode(response.body) as List;
+      final validPosts = jsonData.where((item) {
+        final imageUrl = item["featured_image"]?.toString() ?? "";
+        return Uri.tryParse(imageUrl)?.isAbsolute ?? false;
+      }).toList();
+
+      print("Valid Posts Count: ${validPosts.length}");
+
+      setState(() {
+        _searchResults = validPosts.map((item) {
+          return {
+            "title": (item["title"] ?? "No Title").split(":").first.trim(),
+            "featured_image": item["featured_image"],
+            "content": item["content"] ?? "",
+          };
+        }).toList();
+      });
+
+      print("Processed Posts: $_searchResults");
+    }
+  } catch (e) {
+    print("Error fetching posts: $e");
+  }
+}
 
   Future<void> _loadPreviousSearches() async {
     var box = await Hive.openBox('searchHistoryBox');
@@ -39,9 +78,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     var box = await Hive.openBox('cacheBox');
     var data = box.get('articles', defaultValue: []);
 
-    _searchResults = data.where((post) =>
-      post["title"] != null && post["title"].toLowerCase().contains(query.toLowerCase())
-    ).toList();
+    _searchResults = data
+        .where((post) =>
+            post["title"] != null && post["title"].toLowerCase().contains(query.toLowerCase()))
+        .toList();
 
     setState(() {
       _isLoading = false;
@@ -64,22 +104,25 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   void initState() {
     super.initState();
     _loadPreviousSearches();
+    fetchPosts();
   }
 
   @override
   Widget build(BuildContext context) {
+    final user = ref.watch(authStateProvider);
+
     return Scaffold(
       appBar: AppBar(
-        title: Text("Explore", style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text("Explore", style: TextStyle(fontWeight: FontWeight.bold)),
         actions: [
           IconButton(
-            icon: Icon(Icons.notifications_none),
+            icon: const Icon(Icons.notifications_none),
             onPressed: () {},
           ),
         ],
       ),
       body: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 16.0),
+        padding: const EdgeInsets.symmetric(horizontal: 16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -88,7 +131,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               controller: _searchController,
               decoration: InputDecoration(
                 hintText: "Search News",
-                prefixIcon: Icon(Icons.search, color: Colors.grey),
+                prefixIcon: const Icon(Icons.search, color: Colors.grey),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(5),
                   borderSide: BorderSide.none,
@@ -97,7 +140,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 fillColor: Colors.grey[200],
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
-                        icon: Icon(Icons.clear),
+                        icon: const Icon(Icons.clear),
                         onPressed: () {
                           _searchController.clear();
                           _performSearch('');
@@ -127,20 +170,22 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 });
               },
             ),
-            SizedBox(height: 15),
+            const SizedBox(height: 15),
 
             // 🔹 Show suggestions as user types
-            if (_isSearchBarFocused) ...[
+            if (_isSearchBarFocused)
               Container(
-                padding: EdgeInsets.only(top: 8),
+                padding: const EdgeInsets.only(top: 8),
                 child: ListView.builder(
                   shrinkWrap: true,
-                  itemCount: previousSearches.where((keyword) =>
+                  itemCount: previousSearches
+                      .where((keyword) =>
                           keyword.toLowerCase().contains(_searchController.text.toLowerCase()))
-                      .toList().length,
+                      .length,
                   itemBuilder: (context, index) {
-                    String suggestion = previousSearches.where((keyword) =>
-                          keyword.toLowerCase().contains(_searchController.text.toLowerCase()))
+                    String suggestion = previousSearches
+                        .where((keyword) =>
+                            keyword.toLowerCase().contains(_searchController.text.toLowerCase()))
                         .toList()[index];
 
                     return GestureDetector(
@@ -149,12 +194,12 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                         _performSearch(suggestion);
                       },
                       child: Padding(
-                        padding: EdgeInsets.symmetric(vertical: 5.0),
+                        padding: const EdgeInsets.symmetric(vertical: 5.0),
                         child: Row(
                           children: [
-                            Icon(Icons.history, color: Colors.grey),
-                            SizedBox(width: 8),
-                            Text(suggestion, style: TextStyle(fontSize: 16)),
+                            const Icon(Icons.history, color: Colors.grey),
+                            const SizedBox(width: 8),
+                            Text(suggestion, style: const TextStyle(fontSize: 16)),
                           ],
                         ),
                       ),
@@ -162,30 +207,29 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   },
                 ),
               ),
-            ],
 
-            // 🔹 Show trending news and previous search keywords when not focused
+            // 🔹 Show trending topics and news when not focused
             if (!_isSearchBarFocused) ...[
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: previousSearches.map((keyword) {
                     return Padding(
-                      padding: EdgeInsets.only(right: 8),
+                      padding: const EdgeInsets.only(right: 8),
                       child: GestureDetector(
                         onTap: () {
                           _searchController.text = keyword;
                           _performSearch(keyword);
                         },
                         child: Container(
-                          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                           decoration: BoxDecoration(
                             color: Colors.grey[200],
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
                             keyword,
-                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
                           ),
                         ),
                       ),
@@ -193,62 +237,107 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   }).toList(),
                 ),
               ),
-              SizedBox(height: 20),
-              Text("Trending News", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              SizedBox(height: 20),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: _searchResults.length,
-                  itemBuilder: (context, index) {
-                    return Column(
-                      children: [
-                        ListTile(
-                          leading: ClipRRect(
-                            borderRadius: BorderRadius.circular(8),
-                            child: Image.network(
-                              _searchResults[index]["featured_image"] ?? 
-                                  "https://via.placeholder.com/150",
-                              width: 80,
-                              height: 80,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Image.network(
-                                  "https://via.placeholder.com/150",
-                                  width: 80,
-                                  height: 80,
-                                  fit: BoxFit.cover,
-                                );
-                              },
-                            ),
-                          ),
-                          title: Text(_searchResults[index]['title'] ?? "No title"),
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => PostDetailScreen(
-                                  post: _searchResults[index],
-                                  postContent: _searchResults[index]['content'] ?? "Content not available",
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-                        Divider(),
-                      ],
-                    );
-                  },
+              const SizedBox(height: 20),
+              const Text("Trending News",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 20),
+
+        
+              // Trending News List
+              /*Expanded(
+                child: ListView(
+                  children: [
+                    _buildNewsCard(
+                      imageUrl: "https://via.placeholder.com/150",
+                      title: "Deepseek VS OpenAI: Is Deepseek AI the New Challenger?",
+                    ),
+                    _buildNewsCard(
+                      imageUrl: "https://via.placeholder.com/150",
+                      title: "Which Chinese AI App Has Surpassed ChatGPT?",
+                    ),
+                    _buildNewsCard(
+                      imageUrl: "https://via.placeholder.com/150",
+                      title: "How Is Generative AI Transforming Cybersecurity?",
+                    ),
+                  ],
                 ),
-              ),
+              ),*/
             ] else if (_isLoading) ...[
-              Center(child: CircularProgressIndicator()),
-            ] else ...[
-              Center(child: Text("No results found")),
-            ]
+              const Center(child: CircularProgressIndicator()),
+            ] else if (_searchResults.isNotEmpty) ...[
+              Expanded(
+              child: ListView.builder(
+                itemCount: _searchResults.length,
+                itemBuilder: (context, index) {
+                  final post = _searchResults[index];
+                  return ListTile(
+                    leading: SizedBox(
+                      width: 80,
+                      height: 80,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: CachedNetworkImage(
+                          imageUrl: post["featured_image"],
+                          placeholder: (context, url) => Container(
+                            color: Colors.grey[200],
+                            child: const Center(child: CircularProgressIndicator()),
+                          ),
+                          errorWidget: (context, url, error) => Image.asset(
+                            'lib/assets/image/placeholder.png',
+                            fit: BoxFit.cover,
+                          ),
+                          fit: BoxFit.cover,
+                        )
+                      ),
+                    ),
+                    title: Text(post['title'] ?? "No title"),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => PostDetailScreen(
+                            post: post,
+                            postContent: post['content'],
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+            ],
           ],
         ),
       ),
-      bottomNavigationBar: BottomNavigationWidget(),
+      bottomNavigationBar: const BottomNavigationWidget(),
     );
   }
+
+  Widget _buildTrendingChip(String label) {
+    return Chip(label: Text(label), backgroundColor: Colors.grey[200]);
+  }
+
+  Widget _buildNewsCard({required String imageUrl, required String title}) {
+    return ListTile(
+      leading: SizedBox(
+        width: 80,
+        height: 80,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: Image.network(
+            imageUrl,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) => 
+              Image.asset(
+                'lib/assets/image/placeholder.jpg',
+                fit: BoxFit.cover,
+              ),
+          ),
+        ),
+      ),
+      title: Text(title),
+    );
+  }
+
 }

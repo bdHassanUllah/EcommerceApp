@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:intl/intl.dart';
 import 'MarketplaceDetailScreen.dart';
 
 class MarketplaceScreen extends StatefulWidget {
@@ -22,54 +21,54 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
   }
 
   Future<void> fetchMktPosts() async {
-  try {
-    final response = await http.get(
-      Uri.parse("https://ecommerce.com.pk/wp-json/api/v1/marketplaces"),
-      headers: {
-        'passkey': 'kW044]50^(ty',
-        'Content-Type': 'application/json',
-      },
-    );
+    try {
+      final response = await http.get(
+        Uri.parse("https://ecommerce.com.pk/wp-json/api/v1/marketplaces"),
+        headers: {
+          'passkey': 'kW044]50^(ty',
+          'Content-Type': 'application/json',
+        },
+      );
 
-    if (response.statusCode == 200) {
-      List<dynamic> jsonData = json.decode(response.body);
+      if (response.statusCode == 200) {
+        List<dynamic> jsonData = json.decode(response.body);
 
-      List<Map<String, String>> marketplaceData = jsonData.map<Map<String, String>>((item) {
-        String fullTitle = item["title"] ?? "No Title";
+        List<Map<String, String>> marketplaceData = jsonData.map<Map<String, String>>((item) {
+          String fullTitle = item["title"] ?? "No Title";
 
-        // Default placeholder image
-        String placeholderImage = "https://upload.wikimedia.org/wikipedia/commons/d/d1/Image_not_available.png";
+          // Default placeholder image
+          String placeholderImage = "https://upload.wikimedia.org/wikipedia/commons/d/d1/Image_not_available.png";
 
-        // Get the first available image from API response
-        String imageUrl = item["Image1"] ?? item["Image2"] ?? item["Image3"] ?? item["Image4"] ?? placeholderImage;
+          // Get the first available image from API response
+          String imageUrl = item["Image1"] ?? item["Image2"] ?? item["Image3"] ?? item["Image4"] ?? placeholderImage;
 
-        // Ensure the image URL is valid
-        if (imageUrl.isEmpty || !Uri.tryParse(imageUrl)!.hasAbsolutePath) {
-          imageUrl = placeholderImage;
-        }
+          // Ensure the image URL is valid
+          if (imageUrl.isEmpty || !Uri.tryParse(imageUrl)!.hasAbsolutePath) {
+            imageUrl = placeholderImage;
+          }
 
-        // Extract title before ':'
-        String extractedTitle = fullTitle.contains(":") ? fullTitle.split(":")[0].trim() : fullTitle;
-        return {
-          "title": extractedTitle,
-          "image": imageUrl,
-          "content": item["content"] ?? "No content available",
-        };
-      }).toList();
+          // Extract title before ':'
+          String extractedTitle = fullTitle.contains(":") ? fullTitle.split(":")[0].trim() : fullTitle;
+          return {
+            "title": extractedTitle,
+            "image": imageUrl,
+            "content": item["content"] ?? "No content available",
+          };
+        }).toList();
 
+        setState(() {
+          marketplaceItems = marketplaceData;
+          isLoading = false;
+        });
+      } else {
+        throw Exception("Failed to load marketplace posts");
+      }
+    } catch (error) {
+      print("Error fetching marketplace data: $error");
       setState(() {
-        marketplaceItems = marketplaceData;
         isLoading = false;
       });
-    } else {
-      throw Exception("Failed to load marketplace posts");
     }
-  } catch (error) {
-    print("Error fetching marketplace data: $error");
-    setState(() {
-      isLoading = false;
-    });
-  }
 }
 
 
@@ -128,7 +127,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                                 ),
                               ),
                               Padding(
-                                padding: const EdgeInsets.all(8.0),
+                                padding: const EdgeInsets.fromLTRB(0, 5.0, 0, 10.0),
                                 child: Text(
                                   marketplaceItems[index]["title"]!,
                                   textAlign: TextAlign.center,
@@ -137,10 +136,10 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                                     fontSize: 14,
                                   ),
                                   maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
+                                  //overflow: TextOverflow.ellipsis,
                                 ),
                               ),
-                              _buildDivider(index),
+                              //_buildDivider(index),
                             ],
                           ),
                         );
@@ -153,7 +152,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     );
   }
 
-  Widget _buildDivider(int index) {
+  /*Widget _buildDivider(int index) {
     return Column(
       children: [
         if ((index + 1) % 2 == 0) // Horizontal divider after every row
@@ -168,5 +167,5 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
           ),
       ],
     );
-  }
+  }*/
 }

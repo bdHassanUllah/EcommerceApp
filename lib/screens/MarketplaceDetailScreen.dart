@@ -1,5 +1,7 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:e_commerce/state_provider/AuthStateProvider.dart';
 import 'package:e_commerce/state_provider/BottomStateNavigator.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:e_commerce/Api_files/MarketplaceApi.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -36,22 +38,22 @@ class _MarketplaceDetailScreenState extends ConsumerState<MarketplaceDetailScree
   late Future<List<Map<String, dynamic>>> marketplaceItems;
   Set<String> savedPosts = {};
 
-  @override
+  /*@override
   void initState() {
     super.initState();
     marketplaceItems = MarketplaceUrl.fetchMktPosts();
     _loadSavedPosts();
-  }
+  }*/
 
-  Future<void> _loadSavedPosts() async {
+  /*Future<void> _loadSavedPosts() async {
     final prefs = await SharedPreferences.getInstance();
     final savedPostsList = prefs.getStringList('saved_posts') ?? [];
     setState(() {
       savedPosts = savedPostsList.toSet();
     });
-  }
+  }*/
 
-  Future<void> _toggleSavePost() async {
+  /*Future<void> _toggleSavePost() async {
     final prefs = await SharedPreferences.getInstance();
     if (savedPosts.contains(widget.title)) {
       savedPosts.remove(widget.title);
@@ -60,7 +62,92 @@ class _MarketplaceDetailScreenState extends ConsumerState<MarketplaceDetailScree
     }
     await prefs.setStringList('saved_posts', savedPosts.toList());
     setState(() {});
+  }*/
+  bool isLoggedIn = false;
+  String? userEmail;
+  bool isSaved = false;
+
+  @override
+  void initState() {
+    super.initState();
+    checkLoginStatus();
+    checkIfSaved();
   }
+
+  void checkLoginStatus() {
+    final user = FirebaseAuth.instance.currentUser;
+    setState(() {
+      isLoggedIn = user != null;
+      userEmail = user?.email?.toLowerCase();
+    });
+  }
+
+  Future<void> checkIfSaved() async {
+    if (userEmail == null) return;
+    final docId = "${userEmail!}_" + widget.title;
+    final doc = await FirebaseFirestore.instance.collection('saved_articles').doc(docId).get();
+    setState(() {
+      isSaved = doc.exists;
+    });
+  }
+
+
+    void toggleSaveArticle() async {
+    if (!isLoggedIn) return;
+
+    final docId = "${userEmail!}_" + widget.title;
+    final savedArticlesRef = FirebaseFirestore.instance.collection('saved_articles');
+
+    try {
+      if (isSaved) {
+        await savedArticlesRef.doc(docId).delete();
+        showDialogBox("Removed", "Article removed from saved list.");
+      } else {
+        await savedArticlesRef.doc(docId).set({
+          'email': userEmail!,
+          'title': widget.title?? "No Title",
+          'content': widget.content ?? "No Content",
+          'imageUrl': widget.imageUrl,
+          'timestamp': FieldValue.serverTimestamp(),
+        });
+        showDialogBox("Success", "Article saved successfully!");
+      }
+      setState(() {
+        isSaved = !isSaved;
+      });
+    } catch (error) {
+      showDialogBox("Error", "Failed to save the article. Please try again.");
+    }
+  }
+
+  void showDialogBox(String title, String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(title),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text("OK"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Method to handle sharing the post
+  void sharePost(BuildContext context) {
+    final String postUrl = "https://ecommerce.com.pk/wp-json/api/v1/marketplaces"; // Replace with your post URL
+
+    // Use share_plus to open the share dialog
+    Share.share(postUrl, subject: 'Check out this post!');
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -84,10 +171,10 @@ class _MarketplaceDetailScreenState extends ConsumerState<MarketplaceDetailScree
           actions: [
             PopupMenuButton<String>(
               onSelected: (value) {
-                if (value == 'save' && user != null) {
-                  _toggleSavePost();
-                } else if (value == 'share') {
-                  Share.share("${widget.title}\n\n${removeHtmlTags(widget.content)}");
+                if (value == "save") {
+                  toggleSaveArticle();
+                } else if (value == "share") {
+                  sharePost(context);
                 }
               },
               itemBuilder: (BuildContext context) => [
@@ -98,7 +185,7 @@ class _MarketplaceDetailScreenState extends ConsumerState<MarketplaceDetailScree
                       isSaved ? Icons.bookmark : Icons.bookmark_border,
                       color: isSaved ? Colors.black : null,
                     ),
-                    title: Text('Save'),
+                    title: Text(isSaved?'Unsave':'Save'),
                   ),
                 ),
                 const PopupMenuItem(

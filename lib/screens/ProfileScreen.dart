@@ -247,15 +247,30 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ),
             const SizedBox(height: 20),
             Center(
-              child: ElevatedButton(
-                onPressed: () => _showLogoutDialog(context),
-                style: ElevatedButton.styleFrom(
-                  foregroundColor: Colors.black,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
+              child: SizedBox(
+                height: 50,
+                width: 250,
+                child: ElevatedButton(
+                  onPressed: () => _showLogoutDialog(context),
+                  style: ElevatedButton.styleFrom(
+                    foregroundColor: Colors.black,
+                    backgroundColor: Colors.white,
+                    side: const BorderSide(
+                      color: Colors.black, // Border color
+                      width: 0.2, // Border thickness
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                  child: const Text(
+                    'Logout',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
                   ),
                 ),
-                child: const Text('Logout'),
               ),
             ),
           ],
@@ -266,3 +281,37 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 }
+
+/*import 'package:e_commerce/state_provider/AuthStateProvider.dart';
+import 'package:e_commerce/widgets/BottomNavigationWidget.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+class ProfileScreen extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(authStateProvider);
+
+    return Scaffold(
+      appBar: AppBar(title: Text("Profile")),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text("Welcome, ${user?.email ?? "Guest"}"),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () async {
+                await ref.read(authStateProvider.notifier).signOut();
+                Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+              },
+              child: Text("Log Out"),
+            ),
+          ],
+        ),
+      ),
+      bottomNavigationBar: const BottomNavigationWidget(),
+    );
+  }
+}*/
+

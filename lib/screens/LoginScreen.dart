@@ -49,8 +49,8 @@ class LoginScreen extends StatelessWidget {
                       context,
                       MaterialPageRoute(
                         builder: (context) => ProfileScreen(
-                          userName: user.displayName ?? 'User',
-                          userImage: user.photoURL ?? '',
+                          userName: user.displayName ?? '', 
+                          userImage: user.photoURL ?? 'https://via.placeholder.com/150',
                         ),
                       ),
                     );
