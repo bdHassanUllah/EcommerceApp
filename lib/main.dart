@@ -1,3 +1,4 @@
+import 'package:e_commerce/model/HiveModel.dart';
 import 'package:e_commerce/screens/HomeScreen.dart';
 import 'package:e_commerce/screens/LoginScreen.dart';
 import 'package:e_commerce/screens/ProfileScreen.dart';
@@ -7,19 +8,27 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:e_commerce/screens/SplashScreen.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart'; 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
   await Hive.initFlutter();
 
-  var box = await Hive.openBox('cacheBox'); // Open a storage box
-  await box.clear(); // Clear storage when app starts
+  // Register the generated adapter (not the model)
+  Hive.registerAdapter(HiveModelAdapter()); // No constructor parameters needed
 
-  runApp(const ProviderScope(child: MyApp())); // Wrap in ProviderScope
+  // Open box with model type
+  await Hive.openBox<HiveModel>('postsBox'); // Use HiveModel, not the adapter
+
+  runApp(const ProviderScope(child: MyApp()));
 }
 
+// Update provider to use HiveModel
+final hiveBoxProvider = Provider<Box<HiveModel>>((ref) {
+  return Hive.box<HiveModel>('postsBox');
+});
 class MyApp extends ConsumerWidget {
   const MyApp({super.key});
 
@@ -31,7 +40,7 @@ class MyApp extends ConsumerWidget {
       debugShowCheckedModeBanner: false,
       initialRoute: '/SplashScreen',
       routes: {
-        '/SplashScreen': (context) => SplashScreen(), 
+        '/SplashScreen': (context) => SplashScreen(),
         '/home': (context) => HomeScreen(),
         '/search': (context) => SearchScreen(),
         '/loginscreen': (context) => LoginScreen(),

@@ -15,6 +15,7 @@ class TabsWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      color: Color(0xFF14234B), // Set background color
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -29,10 +30,10 @@ class TabsWidget extends StatelessWidget {
                   tabs[index],
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    fontSize: 14,
+                    fontSize: 16,
                     color: onselectedIndex == index
-                        ? Colors.black
-                        : Colors.black54, // Active tab color change
+                        ? Colors.white // Active tab color (White)
+                        : Colors.white, // Inactive tab color (Light Gray)
                   ),
                 ),
                 if (onselectedIndex == index)
@@ -40,7 +41,7 @@ class TabsWidget extends StatelessWidget {
                     margin: const EdgeInsets.only(top: 4),
                     height: 3,
                     width: 40,
-                    color: Colors.black, // Active tab indicator
+                    color: Colors.white, // Active tab indicator color (White)
                   ),
               ],
             ),

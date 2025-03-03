@@ -10,6 +10,7 @@ android {
     namespace = "com.example.e_commerce"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
+    ndkVersion "25.2.9519653" 
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
@@ -40,6 +41,12 @@ android {
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
+    }
+}
+
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(20))
     }
 }
 

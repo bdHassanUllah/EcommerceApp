@@ -2,12 +2,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:e_commerce/screens/LoginScreen.dart';
 import 'package:e_commerce/screens/PostDetailScreen.dart';
 import 'package:e_commerce/state_provider/AuthStateProvider.dart';
-import 'package:e_commerce/state_provider/SavedPostNotifier.dart';
 import 'package:e_commerce/widgets/BottomNavigationWidget.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hive/hive.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   final String userName;
@@ -27,6 +27,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   User? user;
   String? userEmail;
+  List<Map<String, dynamic>> savedPosts = [];
 
   @override
   void initState() {
@@ -41,38 +42,47 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         user = currentUser;
         userEmail = currentUser.email?.toLowerCase();
       });
+      _fetchSavedPosts(); // ✅ Fetch posts after setting userEmail
     }
   }
 
-  // Method to save the article
-  void _saveArticle(String postId, String title, String content, String imageUrl) async {
-    if (userEmail == null) return;
+  Future<void> _fetchSavedPosts() async {
+  if (userEmail == null) return;
 
-    final savedArticlesRef = FirebaseFirestore.instance.collection('saved_articles');
-    
-    // Check if the article has already been saved by its postId
-    final querySnapshot = await savedArticlesRef
+  final box = await Hive.openBox('cacheBox');
+  print("🐝 Hive Box Keys (Post IDs): ${box.keys.toList()}");
+
+  List<Map<String, dynamic>> fetchedPosts = [];
+
+  try {
+    final querySnapshot = await FirebaseFirestore.instance
+        .collection('saved_articles')
         .where('email', isEqualTo: userEmail)
-        .where('postId', isEqualTo: postId)
         .get();
 
-    if (querySnapshot.docs.isEmpty) {
-      // Save the article if it's not already saved
-      await savedArticlesRef.add({
-        'email': userEmail,
-        'postId': postId,
-        'title': title,
-        'content': content,
-        'imageUrl': imageUrl,
-        'timestamp': FieldValue.serverTimestamp(),
-      });
-    } else {
-      // Optionally show a message that the post is already saved
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("This article is already saved.")),
-      );
+    print("🔥 Firestore Docs Count: ${querySnapshot.docs.length}");
+
+    for (var doc in querySnapshot.docs) {
+      String savedPostId = doc['postId'].toString(); // Ensure correct key
+      print("📝 Firestore Saved Post ID: $savedPostId");
+
+      if (box.containsKey(savedPostId)) {
+        final savedPost = box.get(savedPostId);
+        print("✅ MATCH! Found in Hive: $savedPostId");
+        fetchedPosts.add(savedPost);
+      }
     }
+
+    if (mounted) {
+      setState(() {
+        savedPosts = fetchedPosts;
+        print("✅ Updated savedPosts: ${savedPosts.length} articles");
+      });
+    }
+  } catch (e) {
+    print("🚨 Error fetching saved posts: $e");
   }
+}
 
   void _logout() async {
     await _auth.signOut();
@@ -84,28 +94,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
-  void _showLogoutDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text("Logout"),
-          content: const Text("Are you sure you want to log out?"),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Cancel"),
-            ),
-            TextButton(
-              onPressed: _logout,
-              child: const Text("Logout", style: TextStyle(color: Colors.red)),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   Future<void> _changeAccount() async {
     try {
       await _auth.signOut();
@@ -114,19 +102,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
       if (googleUser == null) return;
 
-      final GoogleSignInAuthentication googleAuth = 
-          await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
       final AuthCredential credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
-      final UserCredential userCredential = 
-          await _auth.signInWithCredential(credential);
+      final UserCredential userCredential = await _auth.signInWithCredential(credential);
       final User? user = userCredential.user;
 
       if (user != null) {
         ref.read(userProvider.notifier).state = user;
+        _fetchSavedPosts(); // ✅ Fetch saved posts after account switch
       }
     } catch (e) {
       print("Error changing account: $e");
@@ -134,8 +121,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   }
 
   @override
-  Widget build(BuildContext context,) {
-    final savedPosts = ref.watch(savedPostsProvider);
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Profile'),
@@ -193,52 +179,27 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ),
             const SizedBox(height: 10),
             Expanded(
-              child: userEmail == null
-                  ? const Center(child: CircularProgressIndicator())
-                  : StreamBuilder<QuerySnapshot>(
-                      stream: FirebaseFirestore.instance
-                          .collection('saved_articles')
-                          .where('email', isEqualTo: userEmail)
-                          .orderBy('timestamp', descending: true)
-                          .snapshots(),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
-                          return const Center(child: CircularProgressIndicator());
-                        }
-                        if (snapshot.hasError) {
-                          return Center(child: Text("Error: ${snapshot.error}"));
-                        }
-                        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                          return const Center(child: Text("No saved articles found."));
-                        }
-
-                        return ListView.builder(
-                          itemCount: snapshot.data!.docs.length,
-                          itemBuilder: (context, index) {
-                            final article = snapshot.data!.docs[index].data() as Map<String, dynamic>;
-                            return ListTile(
-                              title: Text(article['title'] ?? "Untitled"),
-                              leading: article['imageUrl'] != null
-                                  ? Image.network(article['imageUrl'], width: 150, height: 150)
-                                  : const Icon(Icons.image, size: 50),
-                              onTap: () {
-                                _saveArticle(
-                                  article['postId'] ?? '', 
-                                  article['title'] ?? "No title", 
-                                  article['content'] ?? "No content", 
-                                  article['imageUrl'] ?? ''
-                                );
-
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => PostDetailScreen(
-                                      post: article,
-                                      postContent: article['content'] ?? "No content available",
-                                    ),
-                                  ),
-                                );
-                              },
+              child: savedPosts.isEmpty
+                  ? const Center(child: Text("No saved articles found."))
+                  : ListView.builder(
+                      itemCount: savedPosts.length,
+                      itemBuilder: (context, index) {
+                        final article = savedPosts[index];
+                        return ListTile(
+                          title: Text(article['title'] ?? "Untitled"),
+                          leading: article['featured_image'] != null
+                              ? Image.network(article['featured_image'], width: 150, height: 150)
+                              : Image.network(article['image'], width: 150, height: 150),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => PostDetailScreen(
+                                  post: article,
+                                  postContent: article['content'] ?? "No content available",
+                                  id: article['postId'],
+                                ),
+                              ),
                             );
                           },
                         );
@@ -251,13 +212,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 height: 50,
                 width: 250,
                 child: ElevatedButton(
-                  onPressed: () => _showLogoutDialog(context),
+                  onPressed: _logout, // ✅ Logout button works now
                   style: ElevatedButton.styleFrom(
                     foregroundColor: Colors.black,
                     backgroundColor: Colors.white,
                     side: const BorderSide(
-                      color: Colors.black, // Border color
-                      width: 0.2, // Border thickness
+                      color: Colors.black,
+                      width: 0.2,
                     ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
@@ -275,43 +236,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ),
           ],
         ),
-
       ),
       bottomNavigationBar: const BottomNavigationWidget(),
     );
   }
 }
-
-/*import 'package:e_commerce/state_provider/AuthStateProvider.dart';
-import 'package:e_commerce/widgets/BottomNavigationWidget.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-class ProfileScreen extends ConsumerWidget {
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final user = ref.watch(authStateProvider);
-
-    return Scaffold(
-      appBar: AppBar(title: Text("Profile")),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text("Welcome, ${user?.email ?? "Guest"}"),
-            SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () async {
-                await ref.read(authStateProvider.notifier).signOut();
-                Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
-              },
-              child: Text("Log Out"),
-            ),
-          ],
-        ),
-      ),
-      bottomNavigationBar: const BottomNavigationWidget(),
-    );
-  }
-}*/
-

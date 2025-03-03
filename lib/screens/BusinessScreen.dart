@@ -1,42 +1,25 @@
 import 'package:e_commerce/screens/BusinessDetailScreen.dart';
-import 'package:e_commerce/Api_files/BusinessApi.dart';
+import 'package:e_commerce/state_provider/StateProvider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class BusinessPage extends StatefulWidget {
+class BusinessPage extends ConsumerWidget {
   const BusinessPage({super.key});
 
   @override
-  State<BusinessPage> createState() => _BusinessPageState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final businessAsyncValue = ref.watch(businessProvider);
 
-class _BusinessPageState extends State<BusinessPage> {
-  late Future<List<Map<String, dynamic>>> businessUrl;
-
-  @override
-  void initState() {
-    super.initState();
-    businessUrl = BusinessApi.fetchBusinessPosts();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    
     return Scaffold(
-      body: FutureBuilder<List<Map<String, dynamic>>>(
-        future: BusinessApi.fetchBusinessPosts(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
-            return Center(child: Text("Error: ${snapshot.error}"));
-          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+      body: businessAsyncValue.when(
+        data: (businessPosts) {
+          if (businessPosts.isEmpty) {
             return const Center(child: Text("No business listings found"));
           }
-          List<Map<String, dynamic>> businessPosts = snapshot.data!;
 
           return ListView.builder(
             itemCount: businessPosts.length,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             itemBuilder: (context, index) {
               final business = businessPosts[index];
 
@@ -85,9 +68,15 @@ class _BusinessPageState extends State<BusinessPage> {
                 ),
               );
             },
+            
           );
+          
         },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stackTrace) => Center(child: Text("Error: $error")),
+        
       ),
-    );
-  }
-}
+      
+        );}
+        }
+

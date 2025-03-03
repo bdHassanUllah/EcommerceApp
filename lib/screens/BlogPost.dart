@@ -1,131 +1,94 @@
 import 'package:e_commerce/screens/BlogDetailScreen.dart';
+import 'package:e_commerce/state_provider/StateProvider.dart';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class BlogScreen extends StatefulWidget {
+class BlogScreen extends ConsumerStatefulWidget {
   const BlogScreen({super.key});
 
   @override
   _BlogScreenState createState() => _BlogScreenState();
 }
 
-class _BlogScreenState extends State<BlogScreen> {
+class _BlogScreenState extends ConsumerState<BlogScreen> {
   List<Map<String, String>> blogPosts = [];
   bool isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    fetchBlogPosts();
   }
-
-  Future<void> fetchBlogPosts() async {
-    try {
-      final response = await http.get(
-        Uri.parse("https://ecommerce.com.pk/wp-json/api/v1/blogs/"),
-        headers: {
-          'passkey': 'kW044]50^(ty',
-          'Content-Type': 'application/json',
-        },
-      );
-
-      if (response.statusCode == 200) {
-        List<dynamic> jsonData = json.decode(response.body);
-        List<Map<String, String>> businessData = jsonData.map((item) {
-          String fullTitle = item["title"] ?? "No Title";
-          String imageUrl = item["featured_image"] ?? "https://via.placeholder.com/150";
-          String extractedTitle = fullTitle.contains(":") ? fullTitle.split(":")[0].trim() : fullTitle;
-          String content = item["content"] ?? "No content available"; 
-          
-          return {
-            "title": extractedTitle,
-            "image": imageUrl,
-            "content": content, //Pass content
-          };
-        }).toList();
-
-        setState(() {
-          blogPosts = businessData;
-          isLoading = false;
-        });
-      } else {
-        throw Exception("Failed to load blog posts");
-      }
-    } catch (error) {
-      print("Error fetching blog data: $error");
-      setState(() {
-        isLoading = false;
-      });
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
+    final blogAsyncValue = ref.watch(blogProvider); // ✅ Fetch data using Riverpod
+
     return Scaffold(
-      body: Column(
-        children: [
-          Expanded(
-            child: isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : ListView.builder(
-                    padding: const EdgeInsets.all(16.0),
-                    itemCount: blogPosts.length,
-                    itemBuilder: (context, index) {
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => BlogDetailScreen(
-                                    title: blogPosts[index]["title"] ?? "No Title",
-                                    imageUrl: blogPosts[index]["image"] ?? "https://via.placeholder.com/150",
-                                    content: blogPosts[index]["content"] ?? "No content available.", // ✅ Avoids null error
-                                  ),
-                                ),
-                              );
-                            },
+      body: blogAsyncValue.when(
+        data: (blogsPosts) {
+          if (blogsPosts.isEmpty) {
+            return const Center(child: Text("No blog listings found"));
+          }
 
-                            child: _buildBlogPost(
-                              title: blogPosts[index]["title"]!,
-                              imageUrl: blogPosts[index]["image"]!,
-                            ),
-                          ),
-                          const Divider(),
-                        ],
-                      );
-                    },
-                  ),
-          ),
-        ],
-      ),
-    );
-  }
+          return ListView.builder(
+            itemCount: blogsPosts.length,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemBuilder: (context, index) {
+              final blogs = blogsPosts[index];
 
-  Widget _buildBlogPost({required String title, required String imageUrl}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: ListTile(
-        contentPadding: const EdgeInsets.all(16.0),
-        leading: Image.network(
-          imageUrl,
-          width: 120,
-          height: 120,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) {
-            return Image.asset("lib/assets/image/placeholder.jpg", width: 120, height: 120, fit: BoxFit.cover);
-          },
-        ),
-        title: Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-        trailing: Image.asset(
-          'lib/assets/image/share_logo.png',
-          height: 30,
-          width: 30,
-        ),
+              return GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => BlogDetailScreen(
+                        title: blogs["title"] ?? "No Title",
+                        imageUrl: blogs["image"] ?? "https://via.placeholder.com/150",
+                        content: blogs["content"]?.isNotEmpty == true ? blogs["content"]! : "Content not available",  
+                        id: blogs['id'].toString(),
+                      ),
+                    ),
+                  );
+
+                },
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.network(
+                        blogs["image"] ?? "lib/assets/image/placeholder.jpg",
+                        width: double.infinity,
+                        height: 200,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Image.asset(
+                            "lib/assets/image/placeholder.jpg",
+                            width: double.infinity,
+                            height: 200,
+                            fit: BoxFit.cover,
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      blogs["title"] ?? "No Title",
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                ),
+              );
+            },
+            
+          );
+          
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stackTrace) => Center(child: Text("Error: $error")),
+        
       ),
-    );
-  }
-}
+      
+        );}
+        }
+

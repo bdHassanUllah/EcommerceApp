@@ -1,19 +1,21 @@
 import 'package:e_commerce/state_provider/AuthStateProvider.dart';
 import 'package:e_commerce/state_provider/BottomStateNavigator.dart';
-import 'package:e_commerce/state_provider/SavedPostNotifier.dart';
+import 'package:e_commerce/widgets/BottomNavigationWidget.dart';
+import 'package:e_commerce/widgets/Functions.dart';
+import 'package:e_commerce/widgets/SavedFunction.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_html/flutter_html.dart';
-import 'package:share_plus/share_plus.dart';
 
 class PostDetailScreen extends ConsumerStatefulWidget {
   final Map<String, dynamic> post;
   final String postContent;
+  final String id;
 
   const PostDetailScreen({
     super.key,
     required this.post,
     required this.postContent,
+    required this.id,
   });
 
   @override
@@ -21,26 +23,6 @@ class PostDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
-  /*void _sharePost() {
-    final user = ref.read(authStateProvider);
-    if (user == null) {
-      _showLoginMessage();
-      return;
-    }
-
-    Share.share(
-      "${widget.post['title']}\n\nRead more: ${widget.post['link']}",
-      subject: "Check out this post!",
-    );
-  }*/
-  // Method to handle sharing the post
-  void sharePost(BuildContext context) {
-    final String postUrl = "https://ecommerce.com.pk/wp-json/api/v1/happenings/"; // Replace with your post URL
-
-    // Use share_plus to open the share dialog
-    Share.share(postUrl, subject: 'Check out this post!');
-  }
-
   void _toggleSavePost() async {
   final user = ref.watch(authStateProvider);
   if (user == null) {
@@ -82,14 +64,22 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: const Text("Post Details"),
+          backgroundColor: Color(0xFF2F4568),
+          foregroundColor: Colors.white,
+          title: Text(widget.post['title'] ?? "No Title"),
           actions: [
             PopupMenuButton<String>(
               onSelected: (value) {
                 if (value == "save") {
-                  _toggleSavePost();
+                  _toggleSavePost(
+                    
+                  );
                 } else if (value == "share") {
-                  sharePost(context);
+                  ShareUtil.sharePost(
+                    context, 
+                    widget.id, 
+                    pageRoute: "postdetailscreen" // Custom route for marketplace posts
+                  );
                 }
               },
               itemBuilder: (context) => [
@@ -149,12 +139,16 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                   style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 10),
-                Html (data: widget.postContent),
+                //Html (data: widget.postContent),
+                Text(
+                  ShareUtil.removeHtmlTags(widget.postContent),
+                  style: const TextStyle(fontSize: 16),
+                ),
               ],
             ),
           ),
         ),
-        bottomNavigationBar: BottomNavigationBar(
+        /*bottomNavigationBar: BottomNavigationBar(
           currentIndex: selectedIndex,
           onTap: (index) {
             ref.read(bottomNavProvider.notifier).setIndex(index, context);
@@ -175,7 +169,8 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
               label: user != null ? user.displayName ?? "Profile" : "Profile",
             ),
           ],
-        ),
+        ),*/
+        bottomNavigationBar: const BottomNavigationWidget(),
       ),
     );
   }
