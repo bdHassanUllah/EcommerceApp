@@ -21,7 +21,8 @@ void main() async {
 
   // Open box with model type
   await Hive.openBox<HiveModel>('postsBox'); // Use HiveModel, not the adapter
-
+  //await box.clear(); 
+  
   runApp(const ProviderScope(child: MyApp()));
 }
 
@@ -29,6 +30,7 @@ void main() async {
 final hiveBoxProvider = Provider<Box<HiveModel>>((ref) {
   return Hive.box<HiveModel>('postsBox');
 });
+
 class MyApp extends ConsumerWidget {
   const MyApp({super.key});
 

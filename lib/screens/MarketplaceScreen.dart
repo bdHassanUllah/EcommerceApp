@@ -47,7 +47,7 @@ class MarketplaceScreen extends ConsumerWidget {
                             context,
                             MaterialPageRoute(
                               builder: (context) => MarketplaceDetailScreen(
-                                id: item["id"].toString() ?? "None",
+                                id: item["id"].toString(),
                                 title: title,
                                 imageUrl: imageUrl,
                                 content: item["content"] ?? "No content available.",

@@ -2,15 +2,14 @@ import 'package:e_commerce/apiFiles/BusinessApi.dart';
 import 'package:e_commerce/main.dart';
 import 'package:e_commerce/repository/HapPostRepo.dart';
 import 'package:e_commerce/apiFiles/MarketplaceApi.dart';
-import 'package:e_commerce/apiFiles/PostApi.dart';
 import 'package:e_commerce/repository/PostRepository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../apiFiles/BlogsApi.dart';
 
 // API Service Provider
-final apiServiceProvider = Provider<ApiService>((ref) {
-  return ApiService(baseUrl: "https://ecommerce.com.pk/wp-json/api/v1");
+final apiServiceProvider = Provider<PostRepository>((ref) {
+  return PostRepository(baseUrl: "https://ecommerce.com.pk/wp-json/api/v1", postBox: ref.watch(hiveBoxProvider),);
 });
 
 // Post Repository Provider
@@ -18,7 +17,7 @@ final postRepositoryProvider = Provider<PostRepository>((ref) {
   return PostRepository(
     baseUrl: "https://ecommerce.com.pk/wp-json/api/v1",
     postBox: ref.watch(hiveBoxProvider),  // Use the Hive box provider
-    apiService: ref.watch(apiServiceProvider), // Use the API service provider
+    //apiService: ref.watch(apiServiceProvider), // Use the API service provider
   );
 });
 
@@ -40,7 +39,7 @@ final businessRepositoryProvider = Provider<BusinessRepository>((ref) {
 
 // Fetch Posts
 final postProvider = FutureProvider<List<dynamic>>((ref) async {
-  return ref.watch(postRepositoryProvider).fetchData();
+  return ref.watch(postRepositoryProvider).fetchPosts();
 });
 
 // Fetch Marketplace Posts

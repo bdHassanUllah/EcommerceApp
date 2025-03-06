@@ -1,7 +1,9 @@
-import 'package:e_commerce/screens/BlogDetailScreen.dart';
-import 'package:e_commerce/state_provider/StateProvider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:e_commerce/screens/BlogDetailScreen.dart';
+import 'package:e_commerce/state_provider/StateProvider.dart';
+import 'package:hive/hive.dart';
+import 'package:e_commerce/model/HiveModel.dart';
 
 class BlogScreen extends ConsumerStatefulWidget {
   const BlogScreen({super.key});
@@ -11,16 +13,9 @@ class BlogScreen extends ConsumerStatefulWidget {
 }
 
 class _BlogScreenState extends ConsumerState<BlogScreen> {
-  List<Map<String, String>> blogPosts = [];
-  bool isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-  }
   @override
   Widget build(BuildContext context) {
-    final blogAsyncValue = ref.watch(blogProvider); // ✅ Fetch data using Riverpod
+    final blogAsyncValue = ref.watch(blogProvider); //Fetch data using Riverpod
 
     return Scaffold(
       body: blogAsyncValue.when(
@@ -28,6 +23,11 @@ class _BlogScreenState extends ConsumerState<BlogScreen> {
           if (blogsPosts.isEmpty) {
             return const Center(child: Text("No blog listings found"));
           }
+
+          // Debug: Print Hive data for verification
+          var box = Hive.box<HiveModel>('postsBox');
+          print("Hive Stored Keys: ${box.keys.toList()}");
+          print("Hive Stored Posts: ${box.values.toList()}");
 
           return ListView.builder(
             itemCount: blogsPosts.length,
@@ -41,14 +41,13 @@ class _BlogScreenState extends ConsumerState<BlogScreen> {
                     context,
                     MaterialPageRoute(
                       builder: (context) => BlogDetailScreen(
-                        title: blogs["title"] ?? "No Title",
-                        imageUrl: blogs["image"] ?? "https://via.placeholder.com/150",
-                        content: blogs["content"]?.isNotEmpty == true ? blogs["content"]! : "Content not available",  
-                        id: blogs['id'].toString(),
+                        title: blogs.title,
+                        imageUrl: blogs.imageUrl,
+                        content: blogs.content,
+                        id: blogs.id.toString(),
                       ),
                     ),
                   );
-
                 },
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -56,7 +55,7 @@ class _BlogScreenState extends ConsumerState<BlogScreen> {
                     ClipRRect(
                       borderRadius: BorderRadius.circular(8),
                       child: Image.network(
-                        blogs["image"] ?? "lib/assets/image/placeholder.jpg",
+                        blogs.imageUrl,
                         width: double.infinity,
                         height: 200,
                         fit: BoxFit.cover,
@@ -72,7 +71,7 @@ class _BlogScreenState extends ConsumerState<BlogScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      blogs["title"] ?? "No Title",
+                      blogs.title,
                       style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 16),
@@ -80,15 +79,11 @@ class _BlogScreenState extends ConsumerState<BlogScreen> {
                 ),
               );
             },
-            
           );
-          
         },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stackTrace) => Center(child: Text("Error: $error")),
-        
       ),
-      
-        );}
-        }
-
+    );
+  }
+}

@@ -1,13 +1,11 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:e_commerce/screens/LoginScreen.dart';
 import 'package:e_commerce/screens/PostDetailScreen.dart';
-import 'package:e_commerce/state_provider/AuthStateProvider.dart';
 import 'package:e_commerce/widgets/BottomNavigationWidget.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:e_commerce/widgets/CustomButton.dart';
+import 'package:e_commerce/widgets/ProfileScreenFunctions.dart';
+import 'package:e_commerce/widgets/SavedArticle.dart';
+import 'package:e_commerce/widgets/UserProfileWidget.dart';
 import 'package:flutter/material.dart';
-import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hive/hive.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   final String userName;
@@ -24,107 +22,39 @@ class ProfileScreen extends ConsumerStatefulWidget {
 }
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  User? user;
-  String? userEmail;
+  late Profilescreenfunctions _profileFunctions;
   List<Map<String, dynamic>> savedPosts = [];
 
   @override
   void initState() {
     super.initState();
-    _getUserData();
-  }
+    
+    // Initialize Profile Functions
+    _profileFunctions = Profilescreenfunctions(ref: ref, context: context);
+    _profileFunctions.init();
 
-  void _getUserData() {
-    final currentUser = _auth.currentUser;
-    if (currentUser != null) {
-      setState(() {
-        user = currentUser;
-        userEmail = currentUser.email?.toLowerCase();
-      });
-      _fetchSavedPosts(); // ✅ Fetch posts after setting userEmail
-    }
+    // Fetch Saved Articles
+    _fetchSavedPosts();
   }
 
   Future<void> _fetchSavedPosts() async {
-  if (userEmail == null) return;
-
-  final box = await Hive.openBox('cacheBox');
-  print("🐝 Hive Box Keys (Post IDs): ${box.keys.toList()}");
-
-  List<Map<String, dynamic>> fetchedPosts = [];
-
-  try {
-    final querySnapshot = await FirebaseFirestore.instance
-        .collection('saved_articles')
-        .where('email', isEqualTo: userEmail)
-        .get();
-
-    print("🔥 Firestore Docs Count: ${querySnapshot.docs.length}");
-
-    for (var doc in querySnapshot.docs) {
-      String savedPostId = doc['postId'].toString(); // Ensure correct key
-      print("📝 Firestore Saved Post ID: $savedPostId");
-
-      if (box.containsKey(savedPostId)) {
-        final savedPost = box.get(savedPostId);
-        print("✅ MATCH! Found in Hive: $savedPostId");
-        fetchedPosts.add(savedPost);
-      }
-    }
-
-    if (mounted) {
-      setState(() {
-        savedPosts = fetchedPosts;
-        print("✅ Updated savedPosts: ${savedPosts.length} articles");
-      });
-    }
-  } catch (e) {
-    print("🚨 Error fetching saved posts: $e");
-  }
-}
-
-  void _logout() async {
-    await _auth.signOut();
-    await GoogleSignIn().signOut();
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (context) => LoginScreen()),
-      (Route<dynamic> route) => false,
-    );
-  }
-
-  Future<void> _changeAccount() async {
-    try {
-      await _auth.signOut();
-      await GoogleSignIn().signOut();
-
-      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
-      if (googleUser == null) return;
-
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-      final AuthCredential credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      final UserCredential userCredential = await _auth.signInWithCredential(credential);
-      final User? user = userCredential.user;
-
-      if (user != null) {
-        ref.read(userProvider.notifier).state = user;
-        _fetchSavedPosts(); // ✅ Fetch saved posts after account switch
-      }
-    } catch (e) {
-      print("Error changing account: $e");
-    }
+    if (_profileFunctions.userEmail == null) return;
+    
+    SavedArticlesFetcher fetcher = SavedArticlesFetcher(userEmail: _profileFunctions.userEmail!);
+    List<Map<String, dynamic>> posts = await fetcher.fetchSavedPosts();
+    
+    setState(() {
+      savedPosts = posts;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Profile'),
+        title: const Text('PROFILE', style: TextStyle(fontSize: 25),),
+        backgroundColor: const Color(0xFF2F4568),
+        foregroundColor: Colors.white,
         actions: [
           IconButton(
             icon: const Icon(Icons.notifications_outlined, size: 28),
@@ -133,46 +63,27 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         ],
       ),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.fromLTRB(10, 30, 8, 20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 40,
-                  backgroundImage: widget.userImage.isNotEmpty
-                      ? NetworkImage(widget.userImage)
-                      : const AssetImage('lib/assets/image/default_avatar.png') as ImageProvider,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        widget.userName,
-                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+            UserProfileWidget(
+              userName: widget.userName,
+              userImage: widget.userImage,
             ),
-            const SizedBox(height: 10),
-            ElevatedButton(
-              onPressed: _changeAccount,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color.fromARGB(255, 2, 41, 74),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-              ),
-              child: const Text('Change Account'),
+            const SizedBox(height: 25),
+            CustomButton(
+              text: "Change Account",
+              onPressed: () async {
+                final profileFunctions = Profilescreenfunctions(ref: ref, context: context);
+                await profileFunctions.changeAccount(); // ✅ Correct Instance Method Call
+                _fetchSavedPosts(); // Refresh saved posts after account change
+              },
+              backgroundColor: const Color.fromARGB(255, 2, 41, 74),
+              textColor: Colors.white,
             ),
-            const SizedBox(height: 20),
+
+            const SizedBox(height: 40),
             const Text(
               'Saved Articles',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -187,17 +98,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         final article = savedPosts[index];
                         return ListTile(
                           title: Text(article['title'] ?? "Untitled"),
-                          leading: article['featured_image'] != null
-                              ? Image.network(article['featured_image'], width: 150, height: 150)
-                              : Image.network(article['image'], width: 150, height: 150),
+                          leading: (article['imageUrl'] != null && article['imageUrl'].isNotEmpty)
+                              ? Image.network(article['imageUrl'], width: 150, height: 150)
+                              : Image.asset("lib/assets/image/placeholder.jpg", width: 150, height: 150),
                           onTap: () {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
                                 builder: (context) => PostDetailScreen(
-                                  post: article,
+                                  post: article['title']??"None",
                                   postContent: article['content'] ?? "No content available",
-                                  id: article['postId'],
+                                  id: article['id'],
+                                  title: article['title']??"None",
                                 ),
                               ),
                             );
@@ -208,36 +120,27 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ),
             const SizedBox(height: 20),
             Center(
-              child: SizedBox(
-                height: 50,
-                width: 250,
-                child: ElevatedButton(
-                  onPressed: _logout, // ✅ Logout button works now
-                  style: ElevatedButton.styleFrom(
-                    foregroundColor: Colors.black,
-                    backgroundColor: Colors.white,
-                    side: const BorderSide(
-                      color: Colors.black,
-                      width: 0.2,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  ),
-                  child: const Text(
-                    'Logout',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                    ),
-                  ),
-                ),
+              child: CustomButton(
+                text: "Logout",
+                onPressed: () async {
+                  Profilescreenfunctions.showLogoutDialog(
+                    context,
+                    () {
+                      final profileFunctions = Profilescreenfunctions(ref: ref, context: context);
+                      profileFunctions.logout(); // Logout the user after confirmation
+                    },
+                  );
+                },
+                backgroundColor: Colors.white,
+                textColor: Colors.black,
+                borderColor: Colors.black,
               ),
             ),
+
           ],
         ),
       ),
-      bottomNavigationBar: const BottomNavigationWidget(),
+      bottomNavigationBar: BottomNavigationWidget(),
     );
   }
 }

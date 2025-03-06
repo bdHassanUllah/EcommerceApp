@@ -1,8 +1,9 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:e_commerce/model/FirebaseModel.dart';
 import 'package:e_commerce/state_provider/AuthStateProvider.dart';
 import 'package:e_commerce/state_provider/BottomStateNavigator.dart';
+import 'package:e_commerce/state_provider/SavedPost.dart';
 import 'package:e_commerce/widgets/BottomNavigationWidget.dart';
-import 'package:e_commerce/widgets/FirebaseService.dart';
 import 'package:e_commerce/widgets/Functions.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -27,72 +28,21 @@ class BlogDetailScreen extends ConsumerStatefulWidget {
 }
 
 class _BlogDetailScreenState extends ConsumerState<BlogDetailScreen> {
-  bool isLoggedIn = false;
-  String? userEmail;
-  bool isSaved = false;
-
-  @override
-  void initState() {
-    super.initState();
-    checkLoginStatus();
-  }
-
-  void checkLoginStatus() {
-    final user = FirebaseAuth.instance.currentUser;
-    setState(() {
-      isLoggedIn = user != null;
-      userEmail = user?.email?.toLowerCase();
-    });
-    if (isLoggedIn) {
-      checkIfSaved();
-    }
-  }
-
-  Future<void> checkIfSaved() async {
-    if (userEmail == null) return;
-    isSaved = await FirebaseService.isArticleSaved(userEmail!, widget.id);
-    setState(() {});
-  }
-
-  void toggleSaveArticle() async {
-    if (!isLoggedIn) return;
-
-    final article = FirebaseModel(
-      email: userEmail!,
-      postId: widget.id,
-      title: widget.title,
-      imageUrl: widget.imageUrl,
-      content: widget.content,
-    );
-
-    try {
-      if (isSaved) {
-        await FirebaseService.removeSavedArticle(userEmail!, widget.id);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Article removed from saved list.')),
-        );
-      } else {
-        await FirebaseService.saveArticle(article);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Article saved successfully.')),
-        );
-      }
-
-      setState(() {
-        isSaved = !isSaved;
-      });
-    } catch (error) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Error saving article. Please try again.')),
-      );
-    }
+  // ✅ Corrected function
+  void _toggleSavePost() async {
+    await ref.read(savedPostsProvider.notifier).toggleSave(widget.id, context);
   }
 
   @override
   Widget build(BuildContext context) {
     final navigationNotifier = ref.read(bottomNavProvider.notifier);
-    final user = ref.watch(authStateProvider);
-    bool isPopupOpen = false;
+    final savedPosts = ref.watch(savedPostsProvider);
+    final isSaved = savedPosts.contains(widget.id);
+
+    /// ✅ Converts `widget.content` to a Map for Firestore storage
+    Map<String, dynamic> postContent = {
+      "text": widget.content,
+    };
 
     return WillPopScope(
       onWillPop: () async {
@@ -109,71 +59,12 @@ class _BlogDetailScreenState extends ConsumerState<BlogDetailScreen> {
             onPressed: () => Navigator.pop(context),
           ),
           actions: [
-            IconButton(
-              icon: const Icon(Icons.more_vert),
-              onPressed: () async {
-                final RenderBox renderBox = context.findRenderObject() as RenderBox;
-                final Offset offset = renderBox.localToGlobal(Offset.zero);
-
-                if (isPopupOpen) {
-                  Navigator.of(context).pop();
-                } else {
-                  isPopupOpen = true;
-                  await showMenu(
-                    context: context,
-                    position: RelativeRect.fromLTRB(offset.dx + 900, offset.dy + 80, offset.dx + 22, 0),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
-                      side: const BorderSide(color: Colors.grey, width: 1),
-                    ),
-                    color: Colors.white,
-                    elevation: 10,
-                    items: [
-                      PopupMenuItem(
-                        value: 'save',
-                        child: Row(
-                          children: [
-                            Icon(
-                              isSaved ? Icons.bookmark : Icons.bookmark_border,
-                              color: isSaved ? Colors.black : Colors.grey,
-                            ),
-                            const SizedBox(width: 10),
-                            Text(
-                              isSaved ? 'Unsave' : 'Save',
-                              style: const TextStyle(fontWeight: FontWeight.w500),
-                            ),
-                          ],
-                        ),
-                      ),
-                      PopupMenuItem(
-                        value: 'share',
-                        child: Row(
-                          children: const [
-                            Icon(Icons.share, color: Colors.black),
-                            SizedBox(width: 10),
-                            Text(
-                              'Share',
-                              style: TextStyle(fontWeight: FontWeight.w500),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ).then((value) {
-                    isPopupOpen = false;
-
-                    if (value == 'save' && user != null) {
-                      toggleSaveArticle();
-                    } else if (value == 'share') {
-                      ShareUtil.sharePost(
-                        context,
-                        widget.id,
-                        pageRoute: 'blogdetailscreen',
-                      );
-                    }
-                  });
-                }
-              },
+            ShareUtil.buildPopupMenu(
+              context: context,
+              ref: ref,
+              postId: widget.id.toString(),
+              toggleSavePost: _toggleSavePost, // ✅ Now works without error
+              post: postContent,
             ),
           ],
         ),
@@ -206,7 +97,9 @@ class _BlogDetailScreenState extends ConsumerState<BlogDetailScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      widget.content.isNotEmpty ? ShareUtil.removeHtmlTags(widget.content) : 'Content not available',
+                      widget.content.isNotEmpty
+                          ? ShareUtil.removeHtmlTags(widget.content.toString())
+                          : 'Content not available',
                       style: const TextStyle(fontSize: 16),
                     ),
                   ],
@@ -215,7 +108,7 @@ class _BlogDetailScreenState extends ConsumerState<BlogDetailScreen> {
             ],
           ),
         ),
-        bottomNavigationBar: const BottomNavigationWidget(),
+        bottomNavigationBar: BottomNavigationWidget(),
       ),
     );
   }

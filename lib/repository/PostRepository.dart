@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:e_commerce/apiFiles/PostApi.dart';
 import 'package:e_commerce/model/HiveModel.dart';
 import 'package:hive/hive.dart';
 import 'package:http/http.dart' as http;
@@ -7,16 +6,14 @@ import 'package:http/http.dart' as http;
 class PostRepository {
   final String baseUrl;
   final Box<HiveModel> postBox;
-  final ApiService apiService;
 
   PostRepository({
     required this.baseUrl,
     required this.postBox,
-    required this.apiService,
   });
 
   // Fetch Posts from API or Cache
-  Future<List<HiveModel>> fetchData() async {
+  Future<List<HiveModel>> fetchData(String endpoint) async {
     try {
       final response = await http.get(
         Uri.parse("$baseUrl/happenings"),
@@ -33,8 +30,11 @@ class PostRepository {
         List<HiveModel> posts = jsonData.map((data) => HiveModel(
           id: data['id'].toString(),
           title: data['title'] ?? 'No Title',
-          imageUrl: data['image'] ?? '',
+          imageUrl: data['featured_image'] ?? data['thumbnail'] ?? '',
           content: data['content'] ?? '',
+          /*date: data['date'] != null
+        ? DateFormat("yyyy-MM-ddTHH:mm:ss").parse(data['date'].toString()).toIso8601String()
+        : DateTime.now().toIso8601String(),*/
         )).toList();
 
         // Save to Hive Cache
@@ -51,4 +51,5 @@ class PostRepository {
       return postBox.values.toList();
     }
   }
+  Future<List<dynamic>> fetchPosts() => fetchData("/happenings");
 }

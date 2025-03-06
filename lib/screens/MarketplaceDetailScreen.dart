@@ -1,4 +1,3 @@
-import 'package:e_commerce/state_provider/AuthStateProvider.dart';
 import 'package:e_commerce/state_provider/BottomStateNavigator.dart';
 import 'package:e_commerce/widgets/BottomNavigationWidget.dart';
 import 'package:e_commerce/widgets/Functions.dart';
@@ -49,9 +48,9 @@ class _MarketplaceDetailScreenState extends ConsumerState<MarketplaceDetailScree
 
   @override
   Widget build(BuildContext context) {
-    final selectedIndex = ref.watch(bottomNavProvider);
+    //final selectedIndex = ref.watch(bottomNavProvider);
     final navigationNotifier = ref.read(bottomNavProvider.notifier);
-    final user = ref.watch(authStateProvider);
+    //final user = ref.watch(authStateProvider);
     
     return WillPopScope(
       onWillPop: () async {
@@ -104,7 +103,7 @@ class _MarketplaceDetailScreenState extends ConsumerState<MarketplaceDetailScree
             ),
           ],
         ),
-        bottomNavigationBar: const BottomNavigationWidget(),
+        bottomNavigationBar: BottomNavigationWidget(),
       ),
     
     );

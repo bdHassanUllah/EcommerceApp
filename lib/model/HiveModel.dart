@@ -1,20 +1,22 @@
 import 'package:hive/hive.dart';
 
-part 'hive_model.g.dart'; // Generated file
+part 'HiveModel.g.dart';
 
 @HiveType(typeId: 0)
-class HiveModel extends HiveObject { // Rename class to HiveModel
+class HiveModel {
   @HiveField(0)
-  late String id;
+  final String id;
 
   @HiveField(1)
-  late String title;
+  final String title;
 
   @HiveField(2)
-  late String imageUrl;
+  final String imageUrl;
 
   @HiveField(3)
-  late String content;
+  final String content;
+
+
 
   HiveModel({
     required this.id,
@@ -22,4 +24,26 @@ class HiveModel extends HiveObject { // Rename class to HiveModel
     required this.imageUrl,
     required this.content,
   });
+
+  factory HiveModel.fromJson(Map<String, dynamic> json) {
+    return HiveModel(
+      id: json['id'].toString(),
+      title: json['title'] ?? 'No Title',
+      imageUrl: json['image'] ?? '',
+      content: json['content'] ?? '',
+      /*date: json['date'] != null
+          ? DateFormat("yyyy-MM-ddTHH:mm:ss").parse(json['date'].toString()).toIso8601String()
+          : DateTime.now().toIso8601String(),*/
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      "id": id,
+      "title": title,
+      "imageUrl": imageUrl,
+      "content": content,
+
+    };
+  }
 }

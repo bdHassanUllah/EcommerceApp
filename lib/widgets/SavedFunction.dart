@@ -1,47 +1,65 @@
+import 'package:e_commerce/state_provider/AuthStateProvider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
-class SavedPostNotifier extends StateNotifier<Set<String>> {
-  SavedPostNotifier() : super({});
+class SavedPostsNotifier extends StateNotifier<Set<String>> {
+  final Ref ref;
 
-  Future<void> toggleSave(String postId) async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-
-    final docId = "${user.email!.toLowerCase()}_$postId";
-    final savedArticlesRef = FirebaseFirestore.instance.collection('saved_articles').doc(docId);
-
-    final doc = await savedArticlesRef.get();
-
-    if (doc.exists) {
-      await savedArticlesRef.delete();
-      state = {...state}..remove(postId);
-    } else {
-      await savedArticlesRef.set({
-        'email': user.email!,
-        'postId': postId,
-      });
-      state = {...state, postId};
-    }
+  SavedPostsNotifier(this.ref) : super({}) {
+    _initialize();
   }
 
-  Future<void> loadSavedPosts() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
+  /// Initialize listener to update when user changes
+  void _initialize() {
+    ref.listen(authStateProvider, (previous, next) {
+      if (next?.email != previous?.email) {
+        _loadSavedPosts();
+      }
+    });
+    _loadSavedPosts();
+  }
 
-    final querySnapshot = await FirebaseFirestore.instance
+  /// Load saved posts from Firestore dynamically
+  Future<void> _loadSavedPosts() async {
+    final user = ref.read(authStateProvider);
+    final userEmail = user?.email ?? "";
+
+    if (userEmail.isEmpty) return;
+
+    final snapshot = await FirebaseFirestore.instance
         .collection('saved_articles')
-        .where('email', isEqualTo: user.email!.toLowerCase())
+        .where('email', isEqualTo: userEmail)
         .get();
 
-    state = querySnapshot.docs.map((doc) => doc['postId'].toString()).toSet();
+    final savedPosts = snapshot.docs.map((doc) => doc['postId'].toString()).toSet();
+    
+    state = savedPosts;
+  }
+
+  /// Toggle save or unsave a post
+  Future<void> toggleSave(String postId) async {
+    final user = ref.read(authStateProvider);
+    final userEmail = user?.email ?? "";
+
+    if (userEmail.isEmpty) return;
+
+    final docId = "${userEmail}_$postId";
+    final savedArticleRef = FirebaseFirestore.instance.collection('saved_articles').doc(docId);
+
+    if (state.contains(postId)) {
+      await savedArticleRef.delete();
+      state = {...state}..remove(postId);
+    } else {
+      await savedArticleRef.set({'email': userEmail, 'postId': postId});
+      state = {...state}..add(postId);
+    }
+
+    /// Notify all listening widgets
+    state = {...state};  
   }
 }
 
-// Riverpod Provider
-final savedPostsProvider = StateNotifierProvider<SavedPostNotifier, Set<String>>((ref) {
-  final notifier = SavedPostNotifier();
-  notifier.loadSavedPosts(); // Load saved posts initially
-  return notifier;
+// **Update Provider**
+final savedPostsProvider = StateNotifierProvider<SavedPostsNotifier, Set<String>>((ref) {
+  return SavedPostsNotifier(ref);
 });

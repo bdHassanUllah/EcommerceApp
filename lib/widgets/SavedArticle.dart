@@ -1,40 +1,42 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
+import 'package:e_commerce/model/HiveModel.dart';
+import 'package:hive/hive.dart';
 
-class SavedArticlesScreen extends StatelessWidget {
+class SavedArticlesFetcher {
   final String userEmail;
 
-  const SavedArticlesScreen({super.key, required this.userEmail});
+  SavedArticlesFetcher({required this.userEmail});
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text("Saved Articles")),
-      body: StreamBuilder(
-        stream: FirebaseFirestore.instance
-            .collection('saved_articles')
-            .where('email', isEqualTo: userEmail)
-            .snapshots(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return Center(child: CircularProgressIndicator());
+  Future<List<Map<String, dynamic>>> fetchSavedPosts() async {
+    List<Map<String, dynamic>> fetchedPosts = [];
+    var box = Hive.box<HiveModel>('postsBox');
+
+    print("🐝 Hive Box Keys (Post IDs): ${box.keys.toList()}");
+
+    try {
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('saved_articles')
+          .where('email', isEqualTo: userEmail)
+          .get();
+
+      for (var doc in querySnapshot.docs) {
+        String savedPostId = doc['postId'].toString();
+        if (box.containsKey(savedPostId)) {
+          final savedPost = box.get(savedPostId);
+          if (savedPost != null) {
+            fetchedPosts.add({
+              "id": savedPost.id,
+              "title": savedPost.title,
+              "imageUrl": savedPost.imageUrl,
+              "content": savedPost.content,
+            });
+            print("✅ MATCH! Found in Hive: $savedPostId");
           }
-
-          var articles = snapshot.data!.docs;
-
-          return ListView.builder(
-            itemCount: articles.length,
-            itemBuilder: (context, index) {
-              var article = articles[index];
-              return ListTile(
-                leading: Image.network(article['imageUrl'], width: 50, height: 50, fit: BoxFit.cover),
-                title: Text(article['title']),
-                subtitle: Text(article['content']),
-              );
-            },
-          );
-        },
-      ),
-    );
+        }
+      }
+    } catch (e) {
+      print("🚨 Error fetching saved posts: $e");
+    }
+    return fetchedPosts;
   }
 }

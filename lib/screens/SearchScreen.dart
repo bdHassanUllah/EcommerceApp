@@ -1,5 +1,4 @@
 import 'package:e_commerce/screens/PostDetailScreen.dart';
-import 'package:e_commerce/state_provider/AuthStateProvider.dart';
 import 'package:e_commerce/widgets/BottomNavigationWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -63,7 +62,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final user = ref.watch(authStateProvider);
+    //final user = ref.watch(authStateProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -108,7 +107,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           ],
         ),
       ),
-      bottomNavigationBar: const BottomNavigationWidget(),
+      bottomNavigationBar: BottomNavigationWidget(),
     );
   }
 
@@ -167,9 +166,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           context,
           MaterialPageRoute(
             builder: (context) => PostDetailScreen(
-              post: post,
-              postContent: post['content'],
-              id: post['postId'].toString(),
+              post: post['featured_image']??"No Content",
+              postContent: post['content']?.toString() ?? 'No content available',
+              id: (post['postId'] != null) ? post['postId'].toString() : '0',
+              title: post['title']??'None',
             ),
           ),
         );
@@ -198,4 +198,5 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       ),
     );
   }
+
 }
