@@ -24,6 +24,7 @@ class ProfileScreen extends ConsumerStatefulWidget {
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   late Profilescreenfunctions _profileFunctions;
   List<Map<String, dynamic>> savedPosts = [];
+  bool _isDisposed = false;
 
   @override
   void initState() {
@@ -37,12 +38,19 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     _fetchSavedPosts();
   }
 
+  @override
+  void dispose() {
+    _isDisposed = true; // ✅ Mark widget as disposed
+    super.dispose();
+  }
+
   Future<void> _fetchSavedPosts() async {
     if (_profileFunctions.userEmail == null) return;
     
     SavedArticlesFetcher fetcher = SavedArticlesFetcher(userEmail: _profileFunctions.userEmail!);
     List<Map<String, dynamic>> posts = await fetcher.fetchSavedPosts();
-    
+    if (_isDisposed) return;
+
     setState(() {
       savedPosts = posts;
     });
@@ -106,7 +114,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               context,
                               MaterialPageRoute(
                                 builder: (context) => PostDetailScreen(
-                                  post: article['title']??"None",
+                                  images: article['imageUrl']??"featured_image",
                                   postContent: article['content'] ?? "No content available",
                                   id: article['id'],
                                   title: article['title']??"None",

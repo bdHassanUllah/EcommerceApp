@@ -1,6 +1,3 @@
-import 'dart:convert';
-
-import 'package:e_commerce/state_provider/AuthStateProvider.dart';
 import 'package:e_commerce/state_provider/BottomStateNavigator.dart';
 import 'package:e_commerce/state_provider/SavedPost.dart';
 import 'package:e_commerce/widgets/BottomNavigationWidget.dart';
@@ -9,14 +6,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class PostDetailScreen extends ConsumerStatefulWidget {
-  final String post;
+  final String images;
   final String postContent;
   final String id;
   final String title;
 
   const PostDetailScreen({
     super.key,
-    required this.post,
+    required this.images,
     required this.postContent,
     required this.id,
     required this.title
@@ -34,12 +31,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        ref.read(bottomNavProvider.notifier).state = 0;
-        return true;
-      },
-      child: Scaffold(
+      return Scaffold(
         appBar: AppBar(
           backgroundColor: const Color(0xFF2F4568),
           foregroundColor: Colors.white,
@@ -50,7 +42,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
               context: context,
               ref: ref,
               postId: widget.id.toString(), // Corrected ID reference
-              post: widget.post,
+              post: widget.images,
               toggleSavePost: _toggleSavePost, //Works correctly now
             ),
           ],
@@ -62,7 +54,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Image.network(
-                  widget.post,
+                  widget.images,
                   width: MediaQuery.of(context).size.width,
                   height: MediaQuery.of(context).size.width * 0.5,
                   fit: BoxFit.fitWidth,
@@ -88,7 +80,6 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
           ),
         ),
         bottomNavigationBar: BottomNavigationWidget(),
-      ),
-    );
+      );
   }
 }

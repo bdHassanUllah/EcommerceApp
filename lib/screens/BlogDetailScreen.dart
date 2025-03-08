@@ -1,11 +1,7 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:e_commerce/model/FirebaseModel.dart';
-import 'package:e_commerce/state_provider/AuthStateProvider.dart';
 import 'package:e_commerce/state_provider/BottomStateNavigator.dart';
 import 'package:e_commerce/state_provider/SavedPost.dart';
 import 'package:e_commerce/widgets/BottomNavigationWidget.dart';
 import 'package:e_commerce/widgets/Functions.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

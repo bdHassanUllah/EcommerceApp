@@ -208,10 +208,10 @@ class PostWidget extends ConsumerWidget {
           context,
           MaterialPageRoute(
             builder: (context) => PostDetailScreen(
-              post: post.toJson(),
+              images: post.imageUrl,
               postContent: post.content,
-              id: post.id, 
-              title: post,
+              id: post.id.toString(), 
+              title: post.title,
             ),
           ),
         );
