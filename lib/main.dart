@@ -6,27 +6,30 @@ import 'package:e_commerce/screens/SearchScreen.dart';
 import 'package:e_commerce/state_provider/AuthStateProvider.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:hive_flutter/adapters.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:e_commerce/screens/SplashScreen.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
   await Hive.initFlutter();
 
-  // Register the generated adapter (not the model)
-  Hive.registerAdapter(HiveModelAdapter()); // No constructor parameters needed
+  // Delete existing box to avoid errors from old data
+  if (await Hive.boxExists('postsBox')) {
+    await Hive.deleteBoxFromDisk('postsBox');
+  }
 
-  // Open box with model type
-  await Hive.openBox<HiveModel>('postsBox'); // Use HiveModel, not the adapter
-  //await box.clear(); 
-  
+  // Register the Hive adapter
+  Hive.registerAdapter(HiveModelAdapter());
+
+  // Open Hive box for saved posts
+  await Hive.openBox<HiveModel>('postsBox');
+
   runApp(const ProviderScope(child: MyApp()));
 }
 
-// Update provider to use HiveModel
+// Provider for accessing Hive storage
 final hiveBoxProvider = Provider<Box<HiveModel>>((ref) {
   return Hive.box<HiveModel>('postsBox');
 });
@@ -40,9 +43,8 @@ class MyApp extends ConsumerWidget {
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      initialRoute: '/SplashScreen',
+      home: const SplashScreen(), // Start from SplashScreen
       routes: {
-        '/SplashScreen': (context) => SplashScreen(),
         '/home': (context) => HomeScreen(),
         '/search': (context) => SearchScreen(),
         '/loginscreen': (context) => LoginScreen(),

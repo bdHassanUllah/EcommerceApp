@@ -1,3 +1,4 @@
+import 'package:e_commerce/model/HiveModel.dart';
 import 'package:e_commerce/screens/PostDetailScreen.dart';
 import 'package:e_commerce/widgets/BottomNavigationWidget.dart';
 import 'package:e_commerce/widgets/CustomButton.dart';
@@ -114,11 +115,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               context,
                               MaterialPageRoute(
                                 builder: (context) => PostDetailScreen(
-                                  images: article['imageUrl']??"featured_image",
-                                  postContent: article['content'] ?? "No content available",
-                                  id: article['id'],
-                                  title: article['title']??"None",
+                                  hiveModels: HiveModel(
+                                    id: article['id'].toString(), 
+                                    title: article['title'] ?? "None", 
+                                    imageUrl: article['imageUrl'] ?? "featured_image", 
+                                    content: article['content'] ?? "No content available",
+                                    date: article['created_date'] != null
+                                      ? DateTime.tryParse(article['created_date'].toString()) ?? DateTime.now() // ✅ Converts to DateTime safely
+                                      : DateTime.now(), 
+                                    permalink: article['permalink'] ?? "https://ecommerce.com.pk", // ✅ Uses current date as fallback
+                                  ),
                                 ),
+
                               ),
                             );
                           },

@@ -1,3 +1,4 @@
+import 'package:e_commerce/model/Model.dart';
 import 'package:e_commerce/screens/BusinessDetailScreen.dart';
 import 'package:e_commerce/state_provider/StateProvider.dart';
 import 'package:flutter/material.dart';
@@ -22,20 +23,26 @@ class BusinessPage extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             itemBuilder: (context, index) {
               final business = businessPosts[index];
-
               return GestureDetector(
                 onTap: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => BusinessDetailScreen(
-                        title: business["title"] ?? "No Title",
-                        imageUrl: business["image"] ?? "https://via.placeholder.com/150",
-                        content: business["full_description"] ?? "No content available.", // ✅ Avoids null error
-                        post: business,
+                        model: Model(
+                          id: business['id']?.toString() ?? "None",
+                          title: business["title"] ?? "No Title",
+                          imageUrl: business["image"] ?? "https://via.placeholder.com/150",
+                          content: business["full_description"] ?? "No content available.",
+                          permalinks: business["permalink"] ?? "Sorry! Please try again",
+                        ),
+                        date: business["date"] != null
+                            ? DateTime.tryParse(business["date"]) ?? DateTime.now()
+                            : DateTime.now(), // Ensure proper date parsing
                       ),
-                    ),
-                  );
+
+                  )
+                );
 
                 },
                 child: Column(
@@ -77,6 +84,7 @@ class BusinessPage extends ConsumerWidget {
         
       ),
       
-        );}
-        }
+    );
+  }
+}
 

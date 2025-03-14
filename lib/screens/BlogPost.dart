@@ -34,17 +34,20 @@ class _BlogScreenState extends ConsumerState<BlogScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             itemBuilder: (context, index) {
               final blogs = blogsPosts[index];
-
               return GestureDetector(
                 onTap: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => BlogDetailScreen(
-                        title: blogs.title,
-                        imageUrl: blogs.imageUrl,
-                        content: blogs.content,
-                        id: blogs.id.toString(),
+                        hiveModel: HiveModel(
+                          id: blogs.id.toString(), 
+                          title: blogs.title, 
+                          imageUrl: blogs.imageUrl, 
+                          content: blogs.content,
+                          date: blogs.date?? DateTime.now(), 
+                          permalink: blogs.permalink ?? "https://ecommerce.com.pk",
+                        ),
                       ),
                     ),
                   );

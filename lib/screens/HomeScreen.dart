@@ -82,7 +82,7 @@ class HomeScreen extends ConsumerWidget {
         }
         return ListView.builder(
           itemCount: data.length,
-          itemBuilder: (context, index) => PostWidget(post: data[index]),
+          itemBuilder: (context, index) => PostWidget(post: data[index],),
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),

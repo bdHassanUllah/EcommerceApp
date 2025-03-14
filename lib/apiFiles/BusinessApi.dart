@@ -36,6 +36,7 @@ class BusinessApi {
             "image": post["Image1"] ?? "https://example.com/default.jpg",
             "description": _parseHtmlToText(post["description"] ?? "No Description"),
             "full_description": _parseHtmlToText(post["content"] ?? "No Full Description"),
+            "permlink" : post["permlink"] ?? "Sorry! Please try again.",
           };
         }).toList();
       } else {

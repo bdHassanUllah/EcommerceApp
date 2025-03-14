@@ -9,7 +9,7 @@ class Blogsapi {
   Blogsapi({required this.blogBaseUrl});
 
   Future<List<HiveModel>> getBlogsData(String endpoint) async {
-    var box = Hive.box<HiveModel>('postsBox'); // Ensure this is the same across all files
+    var box = Hive.box<HiveModel>('postsBox'); // Ensure consistency in Hive box naming
 
     try {
       final response = await http.get(
@@ -27,16 +27,21 @@ class Blogsapi {
         for (var item in jsonData) {
           if (item is Map<String, dynamic> && item.containsKey('id')) {
             String postId = item["id"].toString();
-            HiveModel post = HiveModel(
-              id: postId,
-              title: (item["title"] ?? "No Title").split(":").first.trim(),
-              imageUrl: item["featured_image"] ?? "https://via.placeholder.com/150",
-              content: item["content"] ?? "No content available",
-            );
+            // In Blogsapi class
+              HiveModel post = HiveModel(
+                id: postId,
+                title: (item["title"] ?? "No Title").split(":").first.trim(),
+                imageUrl: item["featured_image"] ?? "https://via.placeholder.com/150",
+                content: item["content"] ?? "No content available",
+                date: item['created_date'] != null
+                    ? DateTime.tryParse(item['created_date']) ?? DateTime.now()
+                    : DateTime.now(),
+                permalink: item['permalink']?.toString() ?? "None",
+              );
 
             blogsData.add(post);
 
-            // Save the parsed HiveModel, not raw data
+            // Save only if not already stored
             if (!box.containsKey(postId)) {
               box.put(postId, post);
             }

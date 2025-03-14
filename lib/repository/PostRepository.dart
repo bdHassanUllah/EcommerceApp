@@ -32,9 +32,10 @@ class PostRepository {
           title: data['title'] ?? 'No Title',
           imageUrl: data['featured_image'] ?? data['thumbnail'] ?? '',
           content: data['content'] ?? '',
-          /*date: data['date'] != null
-        ? DateFormat("yyyy-MM-ddTHH:mm:ss").parse(data['date'].toString()).toIso8601String()
-        : DateTime.now().toIso8601String(),*/
+          date: data['created_date'] != null
+              ? DateTime.tryParse(data['created_date'].toString()) ?? DateTime.now()
+              : DateTime.now(), 
+          permalink: data.permalink ?? "https://ecommerce.com.pk", // Fixed `data['date']`
         )).toList();
 
         // Save to Hive Cache

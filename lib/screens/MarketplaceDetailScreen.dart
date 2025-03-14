@@ -52,11 +52,13 @@ class _MarketplaceDetailScreenState extends ConsumerState<MarketplaceDetailScree
     final navigationNotifier = ref.read(bottomNavProvider.notifier);
     //final user = ref.watch(authStateProvider);
     
-    return WillPopScope(
-      onWillPop: () async {
-        navigationNotifier.state = 0;
-        return true;
-      },
+    return PopScope(
+  canPop: true, // Allows back navigation
+  onPopInvokedWithResult: (didPop, result) {
+    if (!didPop) {
+      navigationNotifier; // Keeping your original logic
+    }
+  },
       child: Scaffold(
         appBar: AppBar(
           backgroundColor: Color(0xFF2F4568),

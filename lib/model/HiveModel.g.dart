@@ -21,13 +21,15 @@ class HiveModelAdapter extends TypeAdapter<HiveModel> {
       title: fields[1] as String,
       imageUrl: fields[2] as String,
       content: fields[3] as String,
+      date: fields[4] as DateTime?,
+      permalink: fields[5] as String,
     );
   }
 
   @override
   void write(BinaryWriter writer, HiveModel obj) {
     writer
-      ..writeByte(4)
+      ..writeByte(6)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -35,7 +37,11 @@ class HiveModelAdapter extends TypeAdapter<HiveModel> {
       ..writeByte(2)
       ..write(obj.imageUrl)
       ..writeByte(3)
-      ..write(obj.content);
+      ..write(obj.content)
+      ..writeByte(4)
+      ..write(obj.date)
+      ..writeByte(5)
+      ..write(obj.permalink);
   }
 
   @override
