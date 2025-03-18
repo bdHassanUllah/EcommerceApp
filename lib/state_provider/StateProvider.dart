@@ -39,6 +39,7 @@ final businessRepositoryProvider = Provider<BusinessRepository>((ref) {
 
 // Fetch Posts
 final postProvider = FutureProvider<List<dynamic>>((ref) async {
+  //print("🛠 Hive Posts in Storage: ${postsBox.values.toList().map((e) => e.title)}");
   return ref.watch(postRepositoryProvider).fetchPosts();
 });
 

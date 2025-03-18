@@ -75,20 +75,28 @@ class HomeScreen extends ConsumerWidget {
   }
 
   Widget _buildPostList(AsyncValue<List<dynamic>> posts) {
-    return posts.when(
-      data: (data) {
-        if (data.isEmpty) {
-          return const Center(child: Text("No posts available"));
-        }
-        return ListView.builder(
-          itemCount: data.length,
-          itemBuilder: (context, index) => PostWidget(post: data[index],),
-        );
-      },
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, _) => Center(child: Text("Error: $error")),
-    );
-  }
+  return posts.when(
+    data: (data) {
+      print("🖥️ Received Posts in UI: ${data.map((e) => e.title)}");
+      if (data.isEmpty) {
+        return const Center(child: Text("No posts available"));
+      }
+      return ListView.builder(
+        itemCount: data.length,
+        itemBuilder: (context, index) {
+          print("🖼 Rendering Post: ${data[index].title}");
+          return PostWidget(post: data[index]);
+        },
+      );
+    },
+    loading: () => const Center(child: CircularProgressIndicator()),
+    error: (error, _) {
+      print("❌ Error fetching posts in UI: $error");
+      return Center(child: Text("Error: $error"));
+    },
+  );
+}
+
   Widget _buildMarketplaceList(AsyncValue<List<dynamic>> marketplacePosts) {
     return marketplacePosts.when(
       data: (data) => MarketplaceScreen(),

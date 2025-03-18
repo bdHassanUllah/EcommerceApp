@@ -1,4 +1,5 @@
 import 'package:e_commerce/model/HiveModel.dart';
+import 'package:e_commerce/screens/NotificationService.dart';
 import 'package:e_commerce/screens/HomeScreen.dart';
 import 'package:e_commerce/screens/LoginScreen.dart';
 import 'package:e_commerce/screens/ProfileScreen.dart';
@@ -25,6 +26,8 @@ void main() async {
 
   // Open Hive box for saved posts
   await Hive.openBox<HiveModel>('postsBox');
+
+  await NotificationService.initialize();
 
   runApp(const ProviderScope(child: MyApp()));
 }

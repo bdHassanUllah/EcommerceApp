@@ -14,43 +14,52 @@ class PostRepository {
 
   // Fetch Posts from API or Cache
   Future<List<HiveModel>> fetchData(String endpoint) async {
-    try {
-      final response = await http.get(
-        Uri.parse("$baseUrl/happenings"),
-        headers: {
-          'passkey': 'kW044]50^(ty',
-          'Content-Type': 'application/json',
-        },
-      );
+  try {
+    print("🔄 Fetching posts from API...");
+    final response = await http.get(
+      Uri.parse("$baseUrl/happenings"),
+      headers: {
+        'passkey': 'kW044]50^(ty',
+        'Content-Type': 'application/json',
+      },
+    );
 
-      if (response.statusCode == 200) {
-        List<dynamic> jsonData = jsonDecode(response.body);
-        
-        // Convert JSON to List<HiveModel>
-        List<HiveModel> posts = jsonData.map((data) => HiveModel(
+    print("🌐 API Response Code: ${response.statusCode}");
+    if (response.statusCode == 200) {
+      List<dynamic> jsonData = jsonDecode(response.body);
+      print("📊 Raw API Response Data: $jsonData");
+
+      List<HiveModel> posts = jsonData.map((data) {
+        final hivePost = HiveModel(
           id: data['id'].toString(),
           title: data['title'] ?? 'No Title',
           imageUrl: data['featured_image'] ?? data['thumbnail'] ?? '',
           content: data['content'] ?? '',
           date: data['created_date'] != null
               ? DateTime.tryParse(data['created_date'].toString()) ?? DateTime.now()
-              : DateTime.now(), 
-          permalink: data.permalink ?? "https://ecommerce.com.pk", // Fixed `data['date']`
-        )).toList();
+              : DateTime.now(),
+          permalink: data['permalink'] ?? "https://ecommerce.com.pk",
+        );
+        print("✅ Converted Post: ${hivePost.title}");
+        return hivePost;
+      }).toList();
 
-        // Save to Hive Cache
-        for (var post in posts) {
-          postBox.put(post.id, post);
-        }
-
-        return posts;
-      } else {
-        throw Exception('Failed to load data. Status Code: ${response.statusCode}');
+      // Save to Hive Cache
+      for (var post in posts) {
+        postBox.put(post.id, post);
       }
-    } catch (e) {
-      // If API fails, return cached data
-      return postBox.values.toList();
+      print("✅ Posts saved to Hive: ${postBox.values.toList().map((e) => e.title)}");
+
+      return posts;
+    } else {
+      print("❌ Failed to load posts. Status Code: ${response.statusCode}");
+      throw Exception('Failed to load data.');
     }
+  } catch (e) {
+    print("⚠️ Error fetching posts: $e");
+    return postBox.values.toList(); // Fallback to cached data
   }
+}
+
   Future<List<dynamic>> fetchPosts() => fetchData("/happenings");
 }
