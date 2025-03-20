@@ -1,3 +1,4 @@
+import 'package:e_commerce/widgets/ImageWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:e_commerce/screens/BlogDetailScreen.dart';
@@ -55,7 +56,7 @@ class _BlogScreenState extends ConsumerState<BlogScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    ClipRRect(
+                    /*ClipRRect(
                       borderRadius: BorderRadius.circular(8),
                       child: Image.network(
                         blogs.imageUrl,
@@ -71,7 +72,8 @@ class _BlogScreenState extends ConsumerState<BlogScreen> {
                           );
                         },
                       ),
-                    ),
+                    ),*/
+                    BusinessImageWidget(imageUrl: blogs.imageUrl), // ✅ Use the extracted widget
                     const SizedBox(height: 8),
                     Text(
                       blogs.title,

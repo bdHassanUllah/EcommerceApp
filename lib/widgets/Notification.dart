@@ -16,7 +16,7 @@ class NotificationWidget extends ConsumerWidget {
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
-        notification,
+        notification as String,
         style: TextStyle(color: Colors.white, fontSize: 16),
       ),
     );

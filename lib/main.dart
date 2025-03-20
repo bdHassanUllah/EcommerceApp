@@ -27,8 +27,6 @@ void main() async {
   // Open Hive box for saved posts
   await Hive.openBox<HiveModel>('postsBox');
 
-  await NotificationService.initialize();
-
   runApp(const ProviderScope(child: MyApp()));
 }
 
@@ -37,11 +35,26 @@ final hiveBoxProvider = Provider<Box<HiveModel>>((ref) {
   return Hive.box<HiveModel>('postsBox');
 });
 
-class MyApp extends ConsumerWidget {
+class MyApp extends ConsumerStatefulWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  _MyAppState createState() => _MyAppState();
+}
+
+class _MyAppState extends ConsumerState<MyApp> {
+  @override
+  void initState() {
+    super.initState();
+
+    // Initialize notifications
+    Future.delayed(Duration.zero, () async {
+      await NotificationService.initialize(ref); // Now ref is accessible
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final user = ref.watch(authStateProvider);
 
     return MaterialApp(

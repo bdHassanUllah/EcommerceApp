@@ -1,6 +1,7 @@
 import 'package:e_commerce/model/Model.dart';
 import 'package:e_commerce/screens/BusinessDetailScreen.dart';
 import 'package:e_commerce/state_provider/StateProvider.dart';
+import 'package:e_commerce/widgets/ImageWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -48,7 +49,7 @@ class BusinessPage extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    ClipRRect(
+                    /*ClipRRect(
                       borderRadius: BorderRadius.circular(8),
                       child: Image.network(
                         business["image"] ?? "lib/assets/image/placeholder.jpg",
@@ -64,7 +65,8 @@ class BusinessPage extends ConsumerWidget {
                           );
                         },
                       ),
-                    ),
+                    ),*/
+                    BusinessImageWidget(imageUrl: business["image"] ?? "lib/assets/image/placeholder.jpg"), // ✅ Use the extracted widget
                     const SizedBox(height: 8),
                     Text(
                       business["title"] ?? "No Title",

@@ -1,16 +1,27 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:onesignal_flutter/onesignal_flutter.dart';
 
-// StateNotifier to manage notifications
-class NotificationNotifier extends StateNotifier<String> {
-  NotificationNotifier() : super("No new notifications");
+// In NotificationNotifier.dart
+final notificationProvider = StateNotifierProvider<NotificationNotifier, List<OSNotification>>((ref) {
+  return NotificationNotifier(ref);
+});
 
-  // Function to update notification message
-  void updateNotification(String message) {
-    state = message;
+final hasNotificationProvider = StateProvider<bool>((ref) => false);
+
+class NotificationNotifier extends StateNotifier<List<OSNotification>> {
+  final Ref ref;
+  
+  NotificationNotifier(this.ref) : super([]);
+
+  void addNotification(OSNotification notification) {
+    state = [...state, notification];
+    ref.read(hasNotificationProvider.notifier).state = true;
+  }
+
+  void removeNotification(OSNotification notification) {
+    state = state.where((n) => n.notificationId != notification.notificationId).toList();
+    if (state.isEmpty) {
+      ref.read(hasNotificationProvider.notifier).state = false;
+    }
   }
 }
-
-// Create a provider to access the state
-final notificationProvider = StateNotifierProvider<NotificationNotifier, String>((ref) {
-  return NotificationNotifier();
-});

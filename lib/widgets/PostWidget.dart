@@ -3,6 +3,7 @@ import 'package:e_commerce/screens/PostDetailScreen.dart';
 import 'package:e_commerce/state_provider/SavedPost.dart';
 import 'package:e_commerce/state_provider/AuthStateProvider.dart';
 import 'package:e_commerce/widgets/Functions.dart';
+import 'package:e_commerce/widgets/ImageWidget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -65,7 +66,7 @@ class PostWidget extends ConsumerWidget {
                     ],
                   ),
                 ),
-                ClipRRect(
+                /*ClipRRect(
                   borderRadius: BorderRadius.circular(8),
                   child: Image.network(
                     post.imageUrl,
@@ -76,7 +77,12 @@ class PostWidget extends ConsumerWidget {
                         Image.asset("lib/assets/image/placeholder.jpg",
                             height: 80, width: 80, fit: BoxFit.cover),
                   ),
-                ),
+                ),*/
+                BusinessImageWidget(
+                  imageUrl: post.imageUrl, 
+                  height: 80, 
+                  width: 80
+                ), // ✅ Use the extracted widget
               ],
             ),
             const SizedBox(height: 10),

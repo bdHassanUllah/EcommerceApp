@@ -1,3 +1,6 @@
+import 'package:e_commerce/screens/NotificationScreen.dart';
+import 'package:e_commerce/screens/NotificationService.dart';
+import 'package:e_commerce/state_provider/NotificationNotifier.dart';
 import 'package:flutter/material.dart';
 import 'package:e_commerce/state_provider/StateProvider.dart';
 import 'package:e_commerce/state_provider/AuthStateProvider.dart';
@@ -13,6 +16,7 @@ import 'package:e_commerce/screens/BlogPost.dart';
 import 'package:e_commerce/widgets/BottomNavigationWidget.dart';
 import 'package:e_commerce/widgets/TabWidget.dart';
 import 'package:e_commerce/widgets/PostWidget.dart';
+import 'package:onesignal_flutter/src/notification.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -22,8 +26,14 @@ class HomeScreen extends ConsumerWidget {
     final selectedTabIndex = ref.watch(tabIndexProvider);
     final selectedIndex = ref.watch(bottomNavProvider);
     final user = ref.watch(authStateProvider);
+    //final hasNotification = ref.watch(notificationProvider);
 
-    final List<String> tabTitles = ["Latest Posts", "New Launches", "Business Insights", "Blog"];
+    final List<String> tabTitles = [
+      "Latest Posts",
+      "New Launches",
+      "Business Insights",
+      "Blog"
+    ];
 
     final posts = ref.watch(postProvider);
     final marketplacePost = ref.watch(marketplaceProviders);
@@ -48,17 +58,54 @@ class HomeScreen extends ConsumerWidget {
     final List<Widget> pages = [
       Scaffold(
         appBar: AppBar(
-          backgroundColor: Color(0xFF2F4568),
+          backgroundColor: const Color(0xFF2F4568),
           foregroundColor: Colors.white,
-          title: Text(tabTitles[selectedTabIndex], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
-          actions: [IconButton(icon: const Icon(Icons.notifications_none), onPressed: () {})],
+          title: Text(
+            tabTitles[selectedTabIndex],
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+          ),
+          actions: [
+            Stack(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.notifications_none),
+                  onPressed: () {
+                    // Clear notification indicator when tapped
+                    ref.read(hasNotificationProvider.notifier).state = false;
+
+                    // Navigate to the Notification Screen
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => NotificationScreen(),
+                      ),
+                    );
+                  },
+                ),
+                if (ref.watch(hasNotificationProvider)) // ✅ Ensure it's always a boolean
+                  Positioned(
+                    right: 12,
+                    top: 12,
+                    child: Container(
+                      width: 10,
+                      height: 10,
+                      decoration: const BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ],
         ),
         body: Column(
           children: [
             TabsWidget(
               onselectedIndex: selectedTabIndex,
-              onTabSelected: (index) => ref.read(tabIndexProvider.notifier).changeTab(index),
-              tabs: const ["Publications", "Marketplace", "Business", "Blog"], 
+              onTabSelected: (index) =>
+                  ref.read(tabIndexProvider.notifier).changeTab(index),
+              tabs: const ["Publications", "Marketplace", "Business", "Blog"],
             ),
             Expanded(child: getSelectedTabPage(selectedTabIndex)),
           ],
@@ -67,7 +114,10 @@ class HomeScreen extends ConsumerWidget {
       ),
       const SearchScreen(),
       user != null
-          ? ProfileScreen(userName: user.displayName ?? '', userImage: user.photoURL ?? 'https://via.placeholder.com/150')
+          ? ProfileScreen(
+              userName: user.displayName ?? '',
+              userImage: user.photoURL ?? 'https://via.placeholder.com/150',
+            )
           : LoginScreen(),
     ];
 
@@ -85,7 +135,10 @@ class HomeScreen extends ConsumerWidget {
         itemCount: data.length,
         itemBuilder: (context, index) {
           print("🖼 Rendering Post: ${data[index].title}");
-          return PostWidget(post: data[index]);
+          return Visibility(
+            visible: true, // Ensures images are loaded only when visible
+            child: PostWidget(post: data[index]),
+          );
         },
       );
     },
@@ -121,4 +174,3 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 }
-
