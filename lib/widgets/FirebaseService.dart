@@ -7,10 +7,7 @@ class FirebaseService {
   // Save article to Firestore
   static Future<void> saveArticle(FirebaseModel article) async {
     final docId = "${article.email}_${article.postId}";
-    await _firestore
-        .collection('saved_articles')
-        .doc(docId)
-        .set(article.toMap());
+    await _firestore.collection('saved_articles').doc(docId).set(article.toMap());
   }
 
   // Remove saved article
