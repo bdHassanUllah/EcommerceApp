@@ -19,17 +19,10 @@ class ShareUtil {
     var box = Hive.box<HiveModel>('postsBox');
     HiveModel? post = box.get(postId);
 
-    if (post != null) {
-      // Use the permalink from the post
-      final String postUrl = post.permalink;
-      Share.share(postUrl, subject: 'Check out this post!');
-    } else {
-      // Handle error if post is not found
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Failed to load post URL')));
+    // Use the permalink from the post
+    final String postUrl = post!.permalink;
+    Share.share(postUrl, subject: 'Check out this post!');
     }
-  }
 
   static String removeHtmlTags(String htmlString) {
     String withoutShortcodes = htmlString.replaceAll(RegExp(r'\[.*?\]'), '');
